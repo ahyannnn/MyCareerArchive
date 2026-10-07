@@ -1,65 +1,48 @@
-import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../index.js";
-import { authHeader, createTestUser, deleteTestUser } from "../test-utils/db.js";
+import { createTestAgent, deleteTestUser, type TestAgent } from "../test-utils/db.js";
 
 const app = createApp();
-let userA = "";
-let userB = "";
+let userA!: TestAgent;
+let userB!: TestAgent;
 
 beforeAll(async () => {
-  userA = (await createTestUser("tag-a")).id;
-  userB = (await createTestUser("tag-b")).id;
+  userA = await createTestAgent(app, "tag-a");
+  userB = await createTestAgent(app, "tag-b");
 });
 
 afterAll(async () => {
-  await deleteTestUser(userA);
-  await deleteTestUser(userB);
+  await deleteTestUser(userA.userId);
+  await deleteTestUser(userB.userId);
 });
 
 describe("tags CRUD", () => {
   it("creates, lists, and deletes tags", async () => {
-    const created = await request(app)
-      .post("/api/tags")
-      .set(authHeader(userA))
-      .send({ name: "portfolio" });
+    const created = await userA.agent.post("/api/tags").send({ name: "portfolio" });
     expect(created.status).toBe(201);
 
-    const list = await request(app).get("/api/tags").set(authHeader(userA));
+    const list = await userA.agent.get("/api/tags");
     expect(list.body.data.map((t: { name: string }) => t.name)).toContain("portfolio");
 
-    const deleted = await request(app)
-      .delete(`/api/tags/${created.body.data.id}`)
-      .set(authHeader(userA));
+    const deleted = await userA.agent.delete(`/api/tags/${created.body.data.id}`);
     expect(deleted.status).toBe(200);
   });
 
   it("rejects duplicates per user with CONFLICT", async () => {
-    await request(app).post("/api/tags").set(authHeader(userA)).send({ name: "capstone" });
-    const dup = await request(app).post("/api/tags").set(authHeader(userA)).send({ name: "capstone" });
+    await userA.agent.post("/api/tags").send({ name: "capstone" });
+    const dup = await userA.agent.post("/api/tags").send({ name: "capstone" });
     expect(dup.status).toBe(409);
   });
 
   it("enforces ownership on delete", async () => {
-    const created = await request(app)
-      .post("/api/tags")
-      .set(authHeader(userA))
-      .send({ name: "private-tag" });
-    const foreign = await request(app)
-      .delete(`/api/tags/${created.body.data.id}`)
-      .set(authHeader(userB));
+    const created = await userA.agent.post("/api/tags").send({ name: "private-tag" });
+    const foreign = await userB.agent.delete(`/api/tags/${created.body.data.id}`);
     expect(foreign.status).toBe(404);
   });
 
   it("has no update endpoint by design (tags are rename-by-recreate)", async () => {
-    const created = await request(app)
-      .post("/api/tags")
-      .set(authHeader(userA))
-      .send({ name: "immutable-tag" });
-    const res = await request(app)
-      .patch(`/api/tags/${created.body.data.id}`)
-      .set(authHeader(userA))
-      .send({ name: "changed" });
+    const created = await userA.agent.post("/api/tags").send({ name: "immutable-tag" });
+    const res = await userA.agent.patch(`/api/tags/${created.body.data.id}`).send({ name: "changed" });
     expect(res.status).toBe(404);
   });
 });

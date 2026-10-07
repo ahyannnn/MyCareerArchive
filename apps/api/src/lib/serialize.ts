@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { Organization, Skill, Tag } from "@prisma/client";
+import type { Evidence, Organization, Skill, Tag } from "@prisma/client";
 
 // Single source of truth for credential eager-loading. Prisma.validator
 // preserves literal inference so payload types stay exact.
@@ -63,5 +63,18 @@ export function serializeOrganization(o: Organization & { _count?: { credentials
     credentialCount: o._count?.credentials,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
+  };
+}
+
+export function serializeEvidence(e: Evidence) {
+  return {
+    id: e.id,
+    credentialId: e.credentialId,
+    fileName: e.fileName,
+    fileType: e.fileType,
+    mimeType: e.mimeType,
+    fileSize: e.fileSize,
+    status: e.status,
+    createdAt: e.createdAt,
   };
 }

@@ -1,26 +1,26 @@
-# Career Vault Development Roadmap
+# MyCareerArchive Development Roadmap
 
 ## Project Status
 
-Current Phase: Phase 1
-Current Milestone: Project Foundation
+Current Phase: Phase 5 — Evidence Storage (next up)
+Current Milestone: Phases 1–4 complete, verified live (25 API tests green)
 
 ---
 
 # Phase 1 — Foundation
 
-- [ ] Initialize repository
-- [ ] Set up monorepo
-- [ ] Set up Next.js frontend
-- [ ] Set up Express backend
-- [ ] Configure TypeScript
-- [ ] Configure PostgreSQL
-- [ ] Configure Prisma
-- [ ] Configure environment variables
-- [ ] Create API health check
-- [ ] Verify database connection
-- [ ] Run frontend successfully
-- [ ] Run backend successfully
+- [x] Initialize repository
+- [x] Set up monorepo (npm workspaces)
+- [x] Set up Next.js frontend
+- [x] Set up Express backend
+- [x] Configure TypeScript
+- [x] Configure PostgreSQL (Neon, Singapore region)
+- [x] Configure Prisma
+- [x] Configure environment variables
+- [x] Create API health check (`/api/health`, `/api/health/db`)
+- [x] Verify database connection (live: `db:connected`)
+- [x] Run frontend successfully
+- [x] Run backend successfully
 
 ## Phase 1 Completion Criteria
 
@@ -37,16 +37,16 @@ Phase 1 is complete only when:
 
 # Phase 2 — Database
 
-- [ ] Create User model
-- [ ] Create Credential model
-- [ ] Create Evidence model
-- [ ] Create Skill model
-- [ ] Create Tag model
-- [ ] Create Organization model
-- [ ] Create relationships
-- [ ] Create Prisma migration
-- [ ] Verify migration
-- [ ] Test database operations
+- [x] Create User model (+ Better Auth fields: emailVerified, image)
+- [x] Create Credential model
+- [x] Create Evidence model
+- [x] Create Skill model
+- [x] Create Tag model
+- [x] Create Organization model
+- [x] Create relationships (incl. Session/Account/Verification)
+- [x] Create Prisma migration (init + auth_sessions, both applied to Neon)
+- [x] Verify migration
+- [x] Test database operations (via integration tests)
 
 ---
 
@@ -59,39 +59,44 @@ Phase 1 is complete only when:
 - [x] Skills API
 - [x] Tags API
 - [x] Organizations API
-- [x] Ownership authorization (scoped to user; auth header is a dev stand-in until Phase 4)
-- [x] API tests (19 integration tests green)
+- [x] Ownership authorization (scoped to user; real sessions since Phase 4)
+- [x] API tests (25 integration tests green, incl. CORS preflight regression)
 
 ---
 
-# Phase 4 — Authentication
+# Phase 4 — Authentication (Better Auth, Phase 4)
 
-- [ ] Registration
-- [ ] Login
-- [ ] Logout
-- [ ] Session management
-- [ ] Protected routes
-- [ ] User ownership checks
+- [x] Registration (email+password; Google/GitHub wired, env-conditional)
+- [x] Login (email+password + OAuth social sign-in)
+- [x] Logout (session revoked, cookie cleared)
+- [x] Session management (DB sessions, 7-day expiry, sliding refresh)
+- [x] Protected routes (session middleware + ownership scoping)
+- [x] User ownership checks (unchanged — now fed by real sessions)
+- [x] OAuth app credentials in .env (Google + GitHub configured; provider URLs verified live)
+- [x] Email verification (Resend; strict gate — unverified login blocked)
+- [x] Password reset (emailed token; old password invalidated)
 
 ---
 
 # Phase 5 — Evidence Storage
 
-- [ ] Cloudflare R2
-- [ ] Upload evidence
-- [ ] Store file metadata
-- [ ] Generate signed URLs
-- [ ] Delete evidence
-- [ ] File validation
-- [ ] File size limits
+- [x] S3-compatible storage client (private bucket, presigned URLs; R2 kept as fallback driver)
+- [x] Supabase Storage via S3 protocol (free tier, no card) — active driver (`STORAGE_DRIVER=supabase`)
+- [x] Upload evidence (initiate → browser PUT → complete; API never sees bytes)
+- [x] Store file metadata (Evidence rows: PENDING → UPLOADED/FAILED)
+- [x] Generate signed URLs (PUT locked to Content-Type, 15 min; GET downloads, 1 h)
+- [x] Delete evidence (storage object + row, idempotent)
+- [x] File validation (broad MIME allowlist: images, PDF, office docs, text, archives)
+- [x] File size limits (env-configurable, default 25 MB; declared size checked upfront, real size verified via HeadObject)
+- [x] Supabase bucket + S3 keys in .env (private `evidence` bucket, S3 endpoint/region/keys; verified presign + head live)
 
 ---
 
 # Phase 6 — Frontend
 
-- [ ] Login page
-- [ ] Register page
-- [ ] Dashboard
+- [x] Login page (basic version shipped in Phase 4; full UX here)
+- [x] Register page (basic version shipped in Phase 4; full UX here)
+- [x] Dashboard (minimal session + credential list; full UI here)
 - [ ] Credential list
 - [ ] Create credential
 - [ ] Credential details
@@ -102,13 +107,13 @@ Phase 1 is complete only when:
 
 # Phase 7 — Search
 
-- [ ] Search credentials
-- [ ] Filter by type
-- [ ] Filter by year
-- [ ] Filter by skill
-- [ ] Filter by tag
-- [ ] Filter by organization
-- [ ] Sorting
+- [x] Search credentials (API-level: title/description/org/skills/tags; UI in Phase 6)
+- [x] Filter by type (API-level; UI in Phase 6)
+- [x] Filter by year (API-level; UI in Phase 6)
+- [x] Filter by skill (API-level; UI in Phase 6)
+- [x] Filter by tag (API-level; UI in Phase 6)
+- [x] Filter by organization (API-level; UI in Phase 6)
+- [x] Sorting (API-level; UI in Phase 6)
 
 ---
 

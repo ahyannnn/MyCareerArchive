@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Career Vault",
-  description: "Personal career/credential vault — Phase 1 foundation",
+  title: "MyCareerArchive",
+  description: "MyCareerArchive — personal career archive",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

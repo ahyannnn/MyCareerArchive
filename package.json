@@ -1,8 +1,8 @@
 {
-  "name": "career-vault",
+  "name": "mycareerarchive",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal career/credential vault — monorepo",
+  "description": "MyCareerArchive — monorepo",
   "workspaces": [
     "apps/*",
     "packages/*"

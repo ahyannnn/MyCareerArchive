@@ -2,9 +2,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import path from "node:path";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userContext.js";
 import { credentialsRouter } from "./routes/credentials.js";
+import { evidenceRouter } from "./routes/evidence.js";
 import { healthRouter } from "./routes/health.js";
 import { organizationsRouter } from "./routes/organizations.js";
 import { skillsRouter } from "./routes/skills.js";
@@ -23,16 +26,32 @@ for (const p of [
 
 export function createApp() {
   const app = express();
-  app.use(cors());
+
+  // CORS FIRST: browsers send an OPTIONS preflight before cross-origin
+  // JSON requests, and it must be answered with CORS headers before any
+  // route handler runs. cors() never touches the request body stream, so
+  // it is safe here. Never "*" with credentials:true.
+  const webOrigins = (process.env.WEB_ORIGIN ?? "http://localhost:3000")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.use(cors({ origin: webOrigins, credentials: true }));
+
+  // Better Auth SECOND: it reads the raw request stream, so body parsers
+  // must not run before it — otherwise auth requests hang. (Express 4
+  // wildcard syntax; Express 5 would need "/api/auth/*splat".)
+  app.all("/api/auth/*", toNodeHandler(auth));
+
+  // Body parsing LAST (for our own routes only — auth already handled above).
   app.use(express.json({ limit: "1mb" }));
 
   // Public: liveness + DB connectivity probes.
   app.use("/api", healthRouter);
 
-  // Protected: dev user-context stand-in (x-user-id) + ownership-scoped CRUD.
-  // TODO(Phase 4): userContext becomes real session/token auth.
+  // Protected: real session auth (Phase 4) + ownership-scoped CRUD.
   app.use("/api", userContext);
   app.use("/api", credentialsRouter);
+  app.use("/api", evidenceRouter);
   app.use("/api", skillsRouter);
   app.use("/api", tagsRouter);
   app.use("/api", organizationsRouter);

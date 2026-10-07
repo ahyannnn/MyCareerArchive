@@ -1,3 +1,5 @@
+import { AuthStatus } from "./auth-status";
+
 async function getApiHealth(): Promise<{ ok: boolean; service?: string } | { error: string }> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
   try {
@@ -15,12 +17,16 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">Phase 1 — Foundation</p>
-      <h1 className="mt-2 text-4xl font-bold">Career Vault</h1>
+      <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">Phase 4 — Authentication</p>
+      <h1 className="mt-2 text-4xl font-bold">MyCareerArchive</h1>
       <p className="mt-4 text-zinc-600">
-        Personal career/credential vault. The frontend is up. Next: connect the Express API and PostgreSQL via
-        Prisma.
+        MyCareerArchive. Register with email or sign in with Google/GitHub —
+        every credential and its evidence stays scoped to your account.
       </p>
+
+      <div className="mt-6">
+        <AuthStatus />
+      </div>
 
       <div
         className={`mt-8 rounded-lg border p-4 ${

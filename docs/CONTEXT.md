@@ -1,8 +1,8 @@
-# Career Credential Vault — Project Context
+# MyCareerArchive — Project Context
 
 ## 1. Project Overview
 
-I am building a full-stack web application that acts as a **personal career/credential vault**.
+I am building a full-stack web application called **MyCareerArchive** that acts as a **personal career archive**.
 
 The problem I want to solve is that when creating a resume, portfolio, job application, or other professional documents, it is difficult to remember and locate old projects, certificates, seminars, awards, photos, screenshots, messages, documents, links, and other evidence from previous experiences.
 
@@ -343,8 +343,8 @@ Target architecture:
 Future:
 
 ```text
-                    Career Vault
-                         |
+                  MyCareerArchive
+                          |
                +---------+---------+
                |                   |
                v                   v
@@ -371,7 +371,7 @@ Future:
 Prefer a monorepo:
 
 ```text
-career-vault/
+mycareerarchive/
 │
 ├── apps/
 │   ├── web/

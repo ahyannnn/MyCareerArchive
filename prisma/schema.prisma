@@ -1,4 +1,4 @@
-// Career Vault — Phase 1+2 database schema
+// MyCareerArchive — Phase 1+2 database schema
 // Per docs/CONTEXT.md §8. Ownership is enforced at the API layer:
 // every user-owned record carries userId and must match the authenticated user.
 
@@ -25,17 +25,73 @@ enum CredentialType {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  avatar        String?
+  // Better Auth fields (Phase 4). `image` is the auth profile photo;
+  // `avatar` predates it and is kept for app-level use.
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   credentials   Credential[]
   skills        Skill[]
   tags          Tag[]
   organizations Organization[]
+  sessions      Session[]
+  accounts      Account[]
+}
+
+// --- Better Auth tables (Phase 4) ---
+// Shape follows `better-auth generate`; @@map lines dropped so table names
+// stay PascalCase like the rest of this schema (the Prisma adapter resolves
+// through model names, so mapping is unnecessary).
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 model Organization {
@@ -79,19 +135,31 @@ model Credential {
 }
 
 model Evidence {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   credentialId String
   fileName     String
   fileType     String?
   mimeType     String?
   fileSize     Int?
-  // Object-storage key, e.g. users/<userId>/evidence/<id>.pdf (Cloudflare R2, Phase 5).
+  // Upload lifecycle (Phase 5): PENDING rows reserve the key before any
+  // bytes exist; only UPLOADED rows are downloadable. Abandoned uploads
+  // stay PENDING and can be swept later.
+  status       EvidenceStatus @default(PENDING)
+  // Object-storage key, e.g. users/<userId>/evidence/<id>.pdf
+  // (S3-compatible backend: Cloudflare R2 or Supabase Storage, Phase 5).
   storageKey   String
   createdAt    DateTime @default(now())
 
   credential Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
   @@index([credentialId])
+  @@index([credentialId, status])
+}
+
+enum EvidenceStatus {
+  PENDING
+  UPLOADED
+  FAILED
 }
 
 model Skill {

@@ -4,7 +4,7 @@ import { prisma } from "../prisma.js";
 export const healthRouter = Router();
 
 healthRouter.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "career-vault-api", timestamp: new Date().toISOString() });
+  res.json({ ok: true, service: "mycareerarchive-api", timestamp: new Date().toISOString() });
 });
 
 // Deep check: verifies Express -> Prisma -> PostgreSQL connectivity.
