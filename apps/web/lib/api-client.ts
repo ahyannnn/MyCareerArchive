@@ -154,8 +154,27 @@ function toQuery(q: CredentialQuery): string {
 }
 
 export const credentialsApi = {
-  list(q: CredentialQuery): Promise<CredentialList> {
-    return request<CredentialList>(`/api/credentials${toQuery(q)}`, { method: "GET" });
+  // NOTE: unlike every other list endpoint, GET /api/credentials returns
+  // `meta` as a sibling of `data` ({ ok, data, meta }), so it needs the
+  // full envelope — the generic request() unwrap (body.data only) drops it.
+  async list(q: CredentialQuery): Promise<CredentialList> {
+    const res = await fetch(`${API}/api/credentials${toQuery(q)}`, {
+      credentials: "include",
+      method: "GET",
+    });
+    const body = (await res.json().catch(() => null)) as CredentialList & {
+      ok?: boolean;
+      error?: string;
+      message?: string;
+    };
+    if (!res.ok || !body || body.ok === false || !Array.isArray(body.data) || !body.meta) {
+      throw new ApiError(
+        res.status,
+        (body as { error?: string })?.error ?? "REQUEST_FAILED",
+        (body as { message?: string })?.message,
+      );
+    }
+    return { ok: true, data: body.data, meta: body.meta };
   },
   get(id: string): Promise<CredentialSummary> {
     return request<CredentialSummary>(`/api/credentials/${id}`, { method: "GET" });
