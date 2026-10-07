@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -35,8 +35,8 @@ function toUpdatePayload(v: CredentialFormValue) {
   };
 }
 
-export default function EditCredentialPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EditCredentialPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [original, setOriginal] = useState<CredentialSummary | null>(null);
   const [skills, setSkills] = useState<NamedRef[]>([]);

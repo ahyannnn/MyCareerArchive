@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Building2, CalendarDays, ExternalLink, MapPin, Pencil, Trash2 } from "lucide-react";
@@ -34,8 +34,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function CredentialDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function CredentialDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [credential, setCredential] = useState<CredentialSummary | null>(null);
   const [loading, setLoading] = useState(true);
