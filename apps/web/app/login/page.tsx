@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { frontendUrl } from "@/lib/frontend-url";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,6 +38,7 @@ export default function LoginPage() {
       setError(error.message ?? "Sign-in failed");
       return;
     }
+    toast.success("Welcome back");
     router.push("/dashboard");
     router.refresh();
   }
@@ -43,6 +50,7 @@ export default function LoginPage() {
       return;
     }
     setResent(true);
+    toast.success("Verification email sent");
   }
 
   async function social(provider: "google" | "github") {
@@ -52,75 +60,76 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
-      <h1 className="text-3xl font-bold">Log in</h1>
-      <p className="mt-2 text-sm text-zinc-600">Welcome back to your MyCareerArchive.</p>
+    <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-sm flex-col justify-center px-4 py-10">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Log in</CardTitle>
+          <CardDescription>Welcome back to your MyCareerArchive.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={() => social("google")}>
+              Continue with Google
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => social("github")}>
+              Continue with GitHub
+            </Button>
+          </div>
 
-      <div className="mt-6 space-y-2">
-        <button
-          onClick={() => social("google")}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 font-medium hover:bg-zinc-100"
-        >
-          Continue with Google
-        </button>
-        <button
-          onClick={() => social("github")}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 font-medium hover:bg-zinc-100"
-        >
-          Continue with GitHub
-        </button>
-      </div>
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
+            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          </div>
 
-      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-zinc-400">
-        <span className="h-px flex-1 bg-zinc-200" /> or <span className="h-px flex-1 bg-zinc-200" />
-      </div>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            {needsVerification && (
+              <Button type="button" variant="outline" className="w-full" onClick={resend}>
+                {resent ? "Verification email sent — check your inbox" : "Resend verification email"}
+              </Button>
+            )}
+            <Button type="submit" className="w-full" disabled={pending}>
+              {pending ? "Logging in…" : "Log in with email"}
+            </Button>
+          </form>
 
-      <form onSubmit={onSubmit} className="space-y-3">
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-4 py-2"
-        />
-        <input
-          type="password"
-          required
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-4 py-2"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {needsVerification && (
-          <button
-            type="button"
-            onClick={resend}
-            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-100"
-          >
-            {resent ? "Verification email sent — check your inbox" : "Resend verification email"}
-          </button>
-        )}
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50"
-        >
-          {pending ? "Logging in…" : "Log in with email"}
-        </button>
-      </form>
-
-      <p className="mt-6 text-sm text-zinc-600">
-        No account?{" "}
-        <a href="/register" className="font-medium text-zinc-900 underline">
-          Register
-        </a>{" "}
-        ·{" "}
-        <a href="/forgot-password" className="font-medium text-zinc-900 underline">
-          Forgot password?
-        </a>
-      </p>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            No account?{" "}
+            <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
+              Register
+            </Link>{" "}
+            ·{" "}
+            <Link href="/forgot-password" className="font-medium text-foreground underline underline-offset-4">
+              Forgot password?
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }
