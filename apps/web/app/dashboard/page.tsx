@@ -1,50 +1,110 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Archive, Plus } from "lucide-react";
 import { apiFetch, getSessionUser } from "@/lib/server-session";
+import type { CredentialList } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CredentialCard } from "@/components/credential-card";
 
-interface CredentialSummary {
-  id: string;
-  title: string;
-  type: string;
-  date: string | null;
+async function count(type?: string): Promise<number> {
+  const list = await apiFetch<CredentialList>(
+    `/api/credentials?pageSize=1${type ? `&type=${type}` : ""}`,
+  );
+  return list?.meta.total ?? 0;
 }
 
-interface CredentialList {
-  ok: boolean;
-  data: CredentialSummary[];
-  meta: { total: number };
-}
-
-// First authenticated page: proves the full cookie chain
-// browser → Next.js → Express → Postgres. Full credential UI lands in Phase 6.
 export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const list = await apiFetch<CredentialList>("/api/credentials?pageSize=10&sort=created-desc");
+  const [total, projects, certificates, seminars, recent] = await Promise.all([
+    count(),
+    count("PROJECT"),
+    count("CERTIFICATE"),
+    count("SEMINAR"),
+    apiFetch<CredentialList>("/api/credentials?pageSize=6&sort=created-desc"),
+  ]);
+
+  const stats = [
+    { label: "Total credentials", value: total },
+    { label: "Projects", value: projects },
+    { label: "Certificates", value: certificates },
+    { label: "Seminars", value: seminars },
+  ];
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">Dashboard</p>
-      <h1 className="mt-2 text-3xl font-bold">Welcome, {user.name ?? user.email}</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        {list ? `${list.meta.total} credential${list.meta.total === 1 ? "" : "s"} in your vault.` : "Could not reach the API."}
-      </p>
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+            Dashboard
+          </p>
+          <h1 className="mt-1 text-3xl font-bold">Welcome, {user.name ?? user.email}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {total === 0
+              ? "Your vault is empty — preserve your first accomplishment today."
+              : `${total} credential${total === 1 ? "" : "s"} in your vault.`}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/credentials">Browse vault</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/credentials/new">
+              <Plus />
+              Quick Add
+            </Link>
+          </Button>
+        </div>
+      </div>
 
-      <ul className="mt-8 space-y-3">
-        {(list?.data ?? []).map((c) => (
-          <li key={c.id} className="rounded-lg border border-zinc-200 bg-white p-4">
-            <p className="font-semibold">{c.title}</p>
-            <p className="text-xs text-zinc-500">
-              {c.type}
-              {c.date ? ` · ${new Date(c.date).getFullYear()}` : ""}
-            </p>
-          </li>
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold tabular-nums">{s.value}</p>
+            </CardContent>
+          </Card>
         ))}
-      </ul>
-      {list?.data.length === 0 && (
-        <p className="mt-8 rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
-          Your vault is empty. Credential management UI arrives in Phase 6 — for now the API is fully usable.
-        </p>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Recent credentials</h2>
+        {total > 6 && (
+          <Button variant="link" asChild>
+            <Link href="/credentials">View all</Link>
+          </Button>
+        )}
+      </div>
+
+      {(recent?.data.length ?? 0) > 0 ? (
+        <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {recent!.data.map((c) => (
+            <CredentialCard key={c.id} credential={c} />
+          ))}
+        </div>
+      ) : (
+        <Card className="mt-4">
+          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
+            <Archive className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
+            <h2 className="mt-4 text-2xl font-bold">Your vault is empty</h2>
+            <p className="mt-2 text-balance text-sm text-muted-foreground">
+              Capture what you just accomplished — a project, certificate, or seminar — so your
+              future self doesn&apos;t have to reconstruct it.
+            </p>
+            <Button className="mt-6 w-full sm:w-auto" asChild>
+              <Link href="/credentials/new">
+                <Plus />
+                Create your first credential
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </main>
   );

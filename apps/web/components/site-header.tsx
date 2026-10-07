@@ -23,7 +23,10 @@ export async function SiteHeader() {
         {user && (
           <nav className="flex items-center gap-1 text-sm">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Vault</Link>
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/credentials">Vault</Link>
             </Button>
           </nav>
         )}

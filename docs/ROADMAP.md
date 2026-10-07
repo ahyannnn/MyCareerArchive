@@ -96,12 +96,13 @@ Phase 1 is complete only when:
 
 - [x] Login page (basic version shipped in Phase 4; full UX here)
 - [x] Register page (basic version shipped in Phase 4; full UX here)
-- [x] Dashboard (minimal session + credential list; full UI here)
-- [ ] Credential list
-- [ ] Create credential
-- [ ] Credential details
-- [ ] Edit credential
-- [ ] Evidence viewer
+- [x] Dashboard (stat cards, recent credentials, Quick Add, empty vault state)
+- [x] Design system (CSS-variable tokens, owned ui/ primitives, app shell + toasts)
+- [x] Credential list (search, type/year/skill/tag/org filters, sort, pagination)
+- [x] Create credential (shared form: type/date/org/skills/tags, inline create)
+- [x] Credential details (description-list sections, skill/tag badges, links & org)
+- [x] Edit credential (prefilled form, replace semantics for skills/tags)
+- [x] Evidence viewer (status badges, download links, delete with confirm, dropzone uploader driving initiate → PUT → complete)
 
 ---
 
