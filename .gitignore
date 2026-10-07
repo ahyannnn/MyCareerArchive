@@ -1,1 +1,32 @@
-/.env
+# --- Env (never commit real secrets) ---
+.env
+.env.local
+.env*.local
+
+# --- Dependencies ---
+node_modules/
+
+# --- Builds ---
+dist/
+build/
+.next/
+out/
+
+# --- Prisma ---
+prisma/migrations/dev.db*
+*.db
+
+# --- TS / Next ---
+*.tsbuildinfo
+next-env.d.ts
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# --- Logs ---
+*.log
+npm-debug.log*
