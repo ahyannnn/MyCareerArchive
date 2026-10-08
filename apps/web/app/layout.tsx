@@ -5,7 +5,11 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "MyCareerArchive",
-  description: "MyCareerArchive — personal career archive",
+  description: "MyCareerArchive, your personal career archive",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
