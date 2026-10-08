@@ -444,3 +444,47 @@ export const jobsApi = {
     });
   },
 };
+
+// --- Deterministic content generation (no AI) --------------------------------
+// Template-built from stored credentials. Shapes mirror
+// apps/api/src/routes/generate.ts.
+
+export interface ResumeBullets {
+  credentialId: string;
+  title: string;
+  lines: string[];
+}
+
+export interface PortfolioDescription {
+  credentialId: string;
+  title: string;
+  paragraphs: string[];
+}
+
+export interface InterviewQuestion {
+  credentialId: string;
+  credentialTitle: string;
+  question: string;
+  talkingPoints: string[];
+}
+
+export const generateApi = {
+  bullets(credentialIds: string[]): Promise<ResumeBullets[]> {
+    return request<ResumeBullets[]>("/api/resume/bullets", {
+      method: "POST",
+      body: JSON.stringify({ credentialIds }),
+    });
+  },
+  describe(credentialIds: string[]): Promise<PortfolioDescription[]> {
+    return request<PortfolioDescription[]>("/api/portfolio/describe", {
+      method: "POST",
+      body: JSON.stringify({ credentialIds }),
+    });
+  },
+  prepare(input: { credentialIds?: string[]; skill?: string; limit?: number }): Promise<{
+    questions: InterviewQuestion[];
+    totalCredentials: number;
+  }> {
+    return request("/api/interviews/prepare", { method: "POST", body: JSON.stringify(input) });
+  },
+};

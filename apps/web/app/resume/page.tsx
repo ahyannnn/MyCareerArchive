@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCopy, FileText, Printer, SearchX } from "lucide-react";
+import { ClipboardCopy, FileText, ListChecks, Printer, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import {
   CREDENTIAL_TYPES,
+  generateApi,
   resumeApi,
   type CredentialType,
   type ResumeBuildResult,
+  type ResumeBullets,
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,8 @@ export default function ResumePage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bullets, setBullets] = useState<ResumeBullets[] | null>(null);
+  const [bulletsBusy, setBulletsBusy] = useState(false);
 
   function toggleType(t: CredentialType) {
     setTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -45,10 +49,34 @@ export default function ResumePage() {
       });
       setResult(res);
       setSelected(res.matched.map((c) => c.id));
+      setBullets(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not build resume");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function generateBullets() {
+    if (selected.length === 0) return;
+    setBulletsBusy(true);
+    try {
+      setBullets(await generateApi.bullets(selected));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate bullets");
+    } finally {
+      setBulletsBusy(false);
+    }
+  }
+
+  async function copyAllBullets() {
+    if (!bullets) return;
+    const text = bullets.map((b) => `${b.title}\n${b.lines.map((l) => `• ${l}`).join("\n")}`).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Bullets copied to clipboard");
+    } catch {
+      toast.error("Could not copy. Select the bullets manually.");
     }
   }
 
@@ -123,6 +151,12 @@ export default function ResumePage() {
             {result && result.matched.length > 0 && (
               <Button variant="outline" onClick={() => build(true)} disabled={loading || selected.length === 0}>
                 Regenerate from {selected.length} selected
+              </Button>
+            )}
+            {result && selected.length > 0 && (
+              <Button variant="outline" onClick={generateBullets} disabled={bulletsBusy}>
+                <ListChecks />
+                {bulletsBusy ? "Generating…" : `Bullets for ${selected.length} selected`}
               </Button>
             )}
           </div>
@@ -227,6 +261,33 @@ export default function ResumePage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {!loading && bullets && bullets.length > 0 && (
+        <Card className="mt-4">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 print:hidden">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ListChecks className="size-4" />
+              Resume bullets
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={copyAllBullets}>
+              <ClipboardCopy />
+              Copy all bullets
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {bullets.map((b) => (
+              <div key={b.credentialId}>
+                <p className="font-medium">{b.title}</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {b.lines.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </main>
   );

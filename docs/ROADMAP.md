@@ -2,8 +2,8 @@
 
 ## Project Status
 
-Current Phase: Phase 9 — Job matching (deterministic; AI deferred)
-Current Milestone: Phases 1–8 complete, verified live (66 API tests green) + deterministic job matching live (10 jobs tests green)
+Current Phase: Phase 9 — complete (deterministic; AI deferred)
+Current Milestone: Phases 1–9 complete, verified live (87 API tests green: 76 existing + 11 generation tests)
 
 ---
 
@@ -128,13 +128,13 @@ Phase 1 is complete only when:
 
 ---
 
-# Phase 9 — AI (deferred: deterministic job matching shipped first)
+# Phase 9 — Job matching + content generation (deterministic; AI deferred)
 
-
-- [ ] Resume bullet generation
-- [ ] Portfolio description generation
+- [ ] AI career search (deferred by decision — replaced by deterministic qualification + overlap search; revisit only if keyword matching proves insufficient)
+- [x] Resume bullet generation (deterministic `POST /api/resume/bullets` templates; credential detail section + `/resume` bulk generation)
+- [x] Portfolio description generation (deterministic `POST /api/portfolio/describe`; per-entry polished block on `/portfolio`)
 - [x] Job matching (deterministic, no AI: `GET /api/career/qualifications` + `POST /api/jobs/search`; local PH via JSearch, international remote via Remotive; `/jobs` page with Local/International tabs and skill-overlap scoring)
-- [ ] Interview preparation
+- [x] Interview preparation (deterministic `POST /api/interviews/prepare` questions + evidence-citing talking points; `/interviews` page with skill filter and print)
 
 ---
 

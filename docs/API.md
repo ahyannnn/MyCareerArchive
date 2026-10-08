@@ -195,6 +195,33 @@ POST   /api/jobs/search
     (JSearch free quota is 200 calls/month); scoring runs per request so
     cached listings stay correct for every user. Response includes `cached`.
 
+## Deterministic content generation (no AI)
+
+Template-built resume bullets, portfolio descriptions, and interview
+questions assembled verbatim from stored credentials. Missing fields drop
+their sentence instead of being invented.
+
+```http
+POST   /api/resume/bullets        { credentialIds[] (1–20) }
+POST   /api/portfolio/describe    { credentialIds[] (1–20) }
+POST   /api/interviews/prepare    { credentialIds?[] (≤20), skill?, limit? (1–20, default 10) }
+```
+
+- `POST /api/resume/bullets` — `{ bullets: [{ credentialId, title, lines:
+  string[] }] }` (1–4 lines each: type-verb headline, description excerpt,
+  skills sentence, evidence sentence). Surfaced on the credential detail page
+  and in `/resume` for the selected set.
+- `POST /api/portfolio/describe` — `{ entries: [{ credentialId, title,
+  paragraphs: string[] }] }` (overview + skills + evidence/link closing).
+  Surfaced per entry on `/portfolio` behind "Polished descriptions".
+- `POST /api/interviews/prepare` — `{ questions: [{ question,
+  credentialId, credentialTitle, talkingPoints: string[] }],
+  totalCredentials }`. Without `credentialIds` it uses recent credentials
+  (optionally filtered by `skill`); `limit` caps total questions. Surfaced on
+  `/interviews` with skill filter, copy-all, and print.
+- Foreign `credentialIds` → `404`; invalid bodies → `400`; all routes `401`
+  without a session.
+
 ## Ownership
 
 Every query is scoped to the requesting user; cross-user ids behave as `404`,

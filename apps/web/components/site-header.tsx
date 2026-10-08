@@ -35,6 +35,9 @@ export async function SiteHeader() {
               <Link href="/jobs">Jobs</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
+              <Link href="/interviews">Interviews</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
               <Link href="/resume">Resume</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">

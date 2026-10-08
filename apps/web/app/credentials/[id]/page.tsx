@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, CalendarDays, ExternalLink, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, ClipboardCopy, ExternalLink, ListChecks, MapPin, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { credentialsApi, type CredentialSummary } from "@/lib/api-client";
+import { credentialsApi, generateApi, type CredentialSummary, type ResumeBullets } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,8 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
   const [notFound, setNotFound] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [bullets, setBullets] = useState<ResumeBullets | null>(null);
+  const [bulletsBusy, setBulletsBusy] = useState(false);
 
   useEffect(() => {
     credentialsApi
@@ -54,8 +56,7 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
       .finally(() => setLoading(false));
   }, [id]);
 
-  async function remove() {
-    setDeleteBusy(true);
+  async function remove() {    setDeleteBusy(true);
     try {
       await credentialsApi.remove(id);
       toast.success("Credential deleted");
@@ -64,6 +65,28 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not delete credential");
       setDeleteBusy(false);
+    }
+  }
+
+  async function generateBullets() {
+    setBulletsBusy(true);
+    try {
+      const [entry] = await generateApi.bullets([id]);
+      setBullets(entry ?? null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate bullets");
+    } finally {
+      setBulletsBusy(false);
+    }
+  }
+
+  async function copyBullets() {
+    if (!bullets) return;
+    try {
+      await navigator.clipboard.writeText(bullets.lines.map((l) => `• ${l}`).join("\n"));
+      toast.success("Bullets copied to clipboard");
+    } catch {
+      toast.error("Could not copy. Select the bullets manually.");
     }
   }
 
@@ -172,6 +195,40 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
 
       <Section title="Evidence">
         <EvidenceSection credentialId={credential.id} />
+      </Section>
+
+      <Section title="Resume bullets">
+        {bullets ? (
+          <div className="space-y-3">
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+              {bullets.lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={copyBullets}>
+                <ClipboardCopy />
+                Copy bullets
+              </Button>
+              <Button variant="ghost" size="sm" onClick={generateBullets} disabled={bulletsBusy}>
+                Regenerate
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Built from your stored record. Nothing is invented.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Turn this experience into copy-ready resume bullets.
+            </p>
+            <Button variant="outline" size="sm" onClick={generateBullets} disabled={bulletsBusy}>
+              <ListChecks />
+              {bulletsBusy ? "Generating…" : "Generate bullets"}
+            </Button>
+          </div>
+        )}
       </Section>
 
       {(credential.url || credential.organization) && (

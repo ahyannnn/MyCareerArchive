@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCopy, LayoutGrid, Printer, SearchX } from "lucide-react";
+import { ClipboardCopy, LayoutGrid, Printer, SearchX, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
   CREDENTIAL_TYPES,
+  generateApi,
   portfolioApi,
   type CredentialType,
   type PortfolioBuildResult,
+  type PortfolioDescription,
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +29,8 @@ export default function PortfolioPage() {
   const [result, setResult] = useState<PortfolioBuildResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [descriptions, setDescriptions] = useState<PortfolioDescription[] | null>(null);
+  const [describing, setDescribing] = useState(false);
 
   async function build() {
     setLoading(true);
@@ -40,10 +44,24 @@ export default function PortfolioPage() {
         limit: 50,
       });
       setResult(res);
+      setDescriptions(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not build portfolio");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function describeAll() {
+    if (!result || result.entries.length === 0) return;
+    setDescribing(true);
+    try {
+      // describe caps at 20 ids; portfolio build caps at 50.
+      setDescriptions(await generateApi.describe(result.entries.slice(0, 20).map((e) => e.credential.id)));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate descriptions");
+    } finally {
+      setDescribing(false);
     }
   }
 
@@ -142,6 +160,10 @@ export default function PortfolioPage() {
                 <ClipboardCopy />
                 Copy all markdown
               </Button>
+              <Button variant="outline" size="sm" onClick={describeAll} disabled={describing}>
+                <Sparkles />
+                {describing ? "Describing…" : "Polished descriptions"}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => window.print()}>
                 <Printer />
                 Print
@@ -166,6 +188,34 @@ export default function PortfolioPage() {
                   <pre className="flex-1 whitespace-pre-wrap rounded-md bg-muted/60 p-3 font-mono text-xs leading-relaxed print:bg-transparent">
                     {entry.markdown}
                   </pre>
+                  {descriptions?.find((d) => d.credentialId === entry.credential.id) && (
+                    <div className="space-y-2 rounded-md border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="flex items-center gap-1.5 text-sm font-medium">
+                          <Sparkles className="size-4" />
+                          Polished description
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const d = descriptions.find((x) => x.credentialId === entry.credential.id);
+                            if (d) copyText(d.paragraphs.join("\n\n"), entry.credential.title);
+                          }}
+                        >
+                          <ClipboardCopy />
+                          Copy
+                        </Button>
+                      </div>
+                      {descriptions
+                        .find((d) => d.credentialId === entry.credential.id)!
+                        .paragraphs.map((p, i) => (
+                          <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+                            {p}
+                          </p>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

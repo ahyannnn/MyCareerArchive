@@ -8,6 +8,7 @@ import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userContext.js";
 import { credentialsRouter } from "./routes/credentials.js";
 import { careerRouter } from "./routes/career.js";
+import { generateRouter } from "./routes/generate.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { evidenceRouter } from "./routes/evidence.js";
 import { healthRouter } from "./routes/health.js";
@@ -54,6 +55,7 @@ export function createApp() {
   app.use("/api", userContext);
   app.use("/api", credentialsRouter);
   app.use("/api", careerRouter);
+  app.use("/api", generateRouter);
   app.use("/api", jobsRouter);
   app.use("/api", evidenceRouter);
   app.use("/api", skillsRouter);

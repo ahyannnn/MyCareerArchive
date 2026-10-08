@@ -20,5 +20,6 @@ export const config = {
     "/resume/:path*",
     "/portfolio/:path*",
     "/jobs/:path*",
+    "/interviews/:path*",
   ],
 };
