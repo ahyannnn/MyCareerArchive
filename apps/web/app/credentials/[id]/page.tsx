@@ -20,6 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialTypeBadge } from "@/components/credential-card";
 import { EvidenceSection } from "@/components/evidence-section";
+import { useInvalidateVault } from "@/lib/queries";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -37,6 +38,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function CredentialDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
+  const invalidateVault = useInvalidateVault();
   const [credential, setCredential] = useState<CredentialSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -59,6 +61,7 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
   async function remove() {    setDeleteBusy(true);
     try {
       await credentialsApi.remove(id);
+      invalidateVault();
       toast.success("Credential deleted");
       router.push("/credentials");
       router.refresh();

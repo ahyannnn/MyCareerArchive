@@ -1,7 +1,8 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { CredentialType } from "@prisma/client";
 import { Router } from "express";
 import { AppError } from "../lib/errors.js";
+import { cached } from "../lib/cache.js";
 import { credentialInclude, serializeCredential } from "../lib/serialize.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireUserId } from "../middleware/userContext.js";
@@ -71,6 +72,38 @@ function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
+// Raw-SQL filter mirroring buildCredentialWhere exactly (same matches, same
+// counts) so the distinct-year aggregate below agrees with the Prisma list
+// query. Parameterized via Prisma.sql — no string interpolation.
+function timelineYearConditions(
+  userId: string,
+  q: { search?: string; type?: CredentialType; skill?: string; tag?: string; year?: number },
+): Prisma.Sql[] {
+  const conds: Prisma.Sql[] = [Prisma.sql`c."userId" = ${userId}`];
+  if (q.type) conds.push(Prisma.sql`c.type = ${q.type}::"CredentialType"`);
+  if (q.year) {
+    conds.push(
+      Prisma.sql`c.date >= ${new Date(Date.UTC(q.year, 0, 1))} AND c.date < ${new Date(Date.UTC(q.year + 1, 0, 1))}`,
+    );
+  }
+  if (q.skill) {
+    const pattern = `%${q.skill}%`;
+    conds.push(Prisma.sql`EXISTS (SELECT 1 FROM "CredentialSkill" cs JOIN "Skill" s ON s.id = cs."skillId" WHERE cs."credentialId" = c.id AND s.name ILIKE ${pattern})`);
+  }
+  if (q.tag) {
+    const pattern = `%${q.tag}%`;
+    conds.push(Prisma.sql`EXISTS (SELECT 1 FROM "CredentialTag" ct JOIN "Tag" t ON t.id = ct."tagId" WHERE ct."credentialId" = c.id AND t.name ILIKE ${pattern})`);
+  }
+  if (q.search) {
+    const pattern = `%${q.search}%`;
+    conds.push(Prisma.sql`(c.title ILIKE ${pattern} OR c.description ILIKE ${pattern} OR c.location ILIKE ${pattern}
+      OR EXISTS (SELECT 1 FROM "Organization" o WHERE o.id = c."organizationId" AND o.name ILIKE ${pattern})
+      OR EXISTS (SELECT 1 FROM "CredentialSkill" cs JOIN "Skill" s ON s.id = cs."skillId" WHERE cs."credentialId" = c.id AND s.name ILIKE ${pattern})
+      OR EXISTS (SELECT 1 FROM "CredentialTag" ct JOIN "Tag" t ON t.id = ct."tagId" WHERE ct."credentialId" = c.id AND t.name ILIKE ${pattern}))`);
+  }
+  return conds;
+}
+
 // --- Timeline ---------------------------------------------------------------
 
 careerRouter.get(
@@ -86,7 +119,7 @@ careerRouter.get(
         ? [{ date: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }]
         : [{ date: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }];
 
-    const [total, rows, allDates] = await prisma.$transaction([
+    const [total, rows, yearRows] = await prisma.$transaction([
       prisma.credential.count({ where }),
       prisma.credential.findMany({
         where,
@@ -96,7 +129,12 @@ careerRouter.get(
         take: q.pageSize,
       }),
       // Distinct-year count across the whole filter (not just this page).
-      prisma.credential.findMany({ where, select: { date: true } }),
+      // One cheap aggregate instead of fetching every matching date row.
+      // Undated credentials count as their own group (parity with the
+      // previous JS Set logic, which counted null as a distinct value).
+      prisma.$queryRaw<Array<{ totalYears: number; hasUndated: boolean }>>(
+        Prisma.sql`SELECT COUNT(DISTINCT EXTRACT(YEAR FROM date))::int AS "totalYears", EXISTS (SELECT 1 FROM "Credential" c WHERE ${Prisma.join(timelineYearConditions(userId, q), " AND ")} AND c.date IS NULL) AS "hasUndated" FROM "Credential" c WHERE ${Prisma.join(timelineYearConditions(userId, q), " AND ")} AND c.date IS NOT NULL`,
+      ),
     ]);
 
     const serialized = rows.map(serializeCredential);
@@ -114,7 +152,7 @@ careerRouter.get(
         if (b.year === null) return -1;
         return q.sort === "date-asc" ? a.year - b.year : b.year - a.year;
       });
-    const totalYears = new Set(allDates.map((d) => timelineYear(d.date))).size;
+    const totalYears = (yearRows[0]?.totalYears ?? 0) + (yearRows[0]?.hasUndated ? 1 : 0);
 
     res.json({ ok: true, data, meta: { page: q.page, pageSize: q.pageSize, total, totalYears } });
   }),
@@ -122,25 +160,67 @@ careerRouter.get(
 
 // --- Career profile ----------------------------------------------------------
 
+// Per-user TTL for the profile aggregate (user-scoped key, so no cross-user
+// leakage; single-process safe). 60s staleness after mutations, accepted.
+const PROFILE_TTL_MS = 60_000;
+
+interface ProfileAggregate {
+  credentials: number;
+  evidence: number;
+  skills: number;
+  tags: number;
+  organizations: number;
+  withEvidence: number;
+  earliest: Date | null;
+  latest: Date | null;
+  by_PROJECT: number;
+  by_CERTIFICATE: number;
+  by_SEMINAR: number;
+  by_TRAINING: number;
+  by_AWARD: number;
+  by_COMPETITION: number;
+  by_INTERNSHIP: number;
+  by_ORGANIZATION: number;
+  by_VOLUNTEER: number;
+  by_OTHER: number;
+}
+
+// All scalar aggregates in ONE round trip (was 8: 5 counts + groupBy +
+// min/max + withEvidence). byType uses scalar subqueries so the response
+// shape stays byte-identical to the old groupBy version.
+async function profileAggregate(userId: string): Promise<ProfileAggregate> {
+  const rows = await prisma.$queryRaw<ProfileAggregate[]>(Prisma.sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM "Credential" WHERE "userId" = ${userId}) AS credentials,
+      (SELECT COUNT(*)::int FROM "Evidence" e JOIN "Credential" c ON c.id = e."credentialId" WHERE c."userId" = ${userId}) AS evidence,
+      (SELECT COUNT(*)::int FROM "Skill" WHERE "userId" = ${userId}) AS skills,
+      (SELECT COUNT(*)::int FROM "Tag" WHERE "userId" = ${userId}) AS tags,
+      (SELECT COUNT(*)::int FROM "Organization" WHERE "userId" = ${userId}) AS organizations,
+      (SELECT COUNT(*)::int FROM "Credential" c WHERE c."userId" = ${userId}
+        AND EXISTS (SELECT 1 FROM "Evidence" e WHERE e."credentialId" = c.id AND e.status = 'UPLOADED')) AS "withEvidence",
+      (SELECT MIN(date) FROM "Credential" WHERE "userId" = ${userId} AND date IS NOT NULL) AS earliest,
+      (SELECT MAX(date) FROM "Credential" WHERE "userId" = ${userId} AND date IS NOT NULL) AS latest
+      ${Prisma.join(
+        ALL_TYPES.map(
+          (t) =>
+            Prisma.sql`, (SELECT COUNT(*)::int FROM "Credential" WHERE "userId" = ${userId} AND type = ${t}::"CredentialType") AS ${Prisma.raw(`"by_${t}"`)}`,
+        ),
+        "",
+      )}
+  `);
+  const row = rows[0];
+  if (!row) throw new AppError(500, "INTERNAL_ERROR", "Profile aggregate returned no rows");
+  return row;
+}
+
 careerRouter.get(
   "/career/profile",
   asyncHandler(async (req, res) => {
     const userId = requireUserId(req);
 
-    const [credentialTotal, evidenceTotal, skillTotal, tagTotal, orgTotal, byType, range, withEvidence, topSkills, topTags] =
-      await Promise.all([
-        prisma.credential.count({ where: { userId } }),
-        prisma.evidence.count({ where: { credential: { userId } } }),
-        prisma.skill.count({ where: { userId } }),
-        prisma.tag.count({ where: { userId } }),
-        prisma.organization.count({ where: { userId } }),
-        prisma.credential.groupBy({ by: ["type"], where: { userId }, _count: { _all: true } }),
-        prisma.credential.aggregate({
-          where: { userId, date: { not: null } },
-          _min: { date: true },
-          _max: { date: true },
-        }),
-        prisma.credential.count({ where: { userId, evidence: { some: { status: "UPLOADED" } } } }),
+    const [agg, topSkills, topTags] = await cached(`profile:${userId}`, PROFILE_TTL_MS, () =>
+      Promise.all([
+        profileAggregate(userId),
         prisma.skill.findMany({
           where: { userId },
           include: { _count: { select: { credentials: true } } },
@@ -153,23 +233,24 @@ careerRouter.get(
           orderBy: { credentials: { _count: "desc" } },
           take: 5,
         }),
-      ]);
+      ]),
+    );
 
     const byTypeRecord = Object.fromEntries(ALL_TYPES.map((t) => [t, 0])) as Record<CredentialType, number>;
-    for (const g of byType) byTypeRecord[g.type] = g._count._all;
+    for (const t of ALL_TYPES) byTypeRecord[t] = agg[`by_${t}`];
 
     res.json({
       ok: true,
       data: {
         totals: {
-          credentials: credentialTotal,
-          evidence: evidenceTotal,
-          skills: skillTotal,
-          tags: tagTotal,
-          organizations: orgTotal,
+          credentials: agg.credentials,
+          evidence: agg.evidence,
+          skills: agg.skills,
+          tags: agg.tags,
+          organizations: agg.organizations,
           byType: byTypeRecord,
         },
-        dateRange: { earliest: range._min.date, latest: range._max.date },
+        dateRange: { earliest: agg.earliest, latest: agg.latest },
         topSkills: topSkills.map((s) => ({
           id: s.id,
           name: s.name,
@@ -181,8 +262,8 @@ careerRouter.get(
           credentialCount: t._count.credentials,
         })),
         evidenceCoverage: {
-          withEvidence,
-          withoutEvidence: Math.max(0, credentialTotal - withEvidence),
+          withEvidence: agg.withEvidence,
+          withoutEvidence: Math.max(0, agg.credentials - agg.withEvidence),
         },
       },
     });

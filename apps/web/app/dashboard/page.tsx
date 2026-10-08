@@ -2,35 +2,31 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Archive, Plus } from "lucide-react";
 import { apiFetch, getSessionUser } from "@/lib/server-session";
-import type { CredentialList } from "@/lib/api-client";
+import type { CareerProfile, CredentialList } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CredentialCard } from "@/components/credential-card";
-
-async function count(type?: string): Promise<number> {
-  const list = await apiFetch<CredentialList>(
-    `/api/credentials?pageSize=1${type ? `&type=${type}` : ""}`,
-  );
-  return list?.meta.total ?? 0;
-}
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [total, projects, certificates, seminars, recent] = await Promise.all([
-    count(),
-    count("PROJECT"),
-    count("CERTIFICATE"),
-    count("SEMINAR"),
+  // Two round trips total (was six: session + 4 counts + recent). Counts come
+  // from the career profile aggregate instead of four ?pageSize=1 queries.
+  // NOTE: apiFetch returns the full { ok, data } envelope (unlike the
+  // client api-client which unwraps body.data), so read through .data.
+  const [profile, recent] = await Promise.all([
+    apiFetch<{ data: CareerProfile }>("/api/career/profile"),
     apiFetch<CredentialList>("/api/credentials?pageSize=6&sort=created-desc"),
   ]);
 
+  const totals = profile?.data?.totals;
+  const total = totals?.credentials ?? 0;
   const stats = [
     { label: "Total credentials", value: total },
-    { label: "Projects", value: projects },
-    { label: "Certificates", value: certificates },
-    { label: "Seminars", value: seminars },
+    { label: "Projects", value: totals?.byType.PROJECT ?? 0 },
+    { label: "Certificates", value: totals?.byType.CERTIFICATE ?? 0 },
+    { label: "Seminars", value: totals?.byType.SEMINAR ?? 0 },
   ];
 
   return (

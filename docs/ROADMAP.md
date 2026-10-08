@@ -3,7 +3,7 @@
 ## Project Status
 
 Current Phase: Phase 9 — complete (deterministic; AI deferred)
-Current Milestone: Phases 1–9 complete, verified live (87 API tests green: 76 existing + 11 generation tests)
+Current Milestone: Phases 1–9 complete, verified live (91 API tests green) + navigation perf pass (session cookie cache, combined aggregates, TanStack Query)
 
 ---
 

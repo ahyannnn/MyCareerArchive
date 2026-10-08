@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AppError } from "../lib/errors.js";
+import { cached } from "../lib/cache.js";
 import { scoreJobs, searchJobs } from "../lib/jobs.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireUserId } from "../middleware/userContext.js";
@@ -9,6 +10,10 @@ import { jobsSearchBody, type JobsSearchBody } from "../validation/jobs.js";
 
 export const jobsRouter = Router();
 
+// Per-user TTL for the qualifications aggregate (user-scoped key, same
+// staleness contract as the career profile cache).
+const QUALIFICATIONS_TTL_MS = 60_000;
+
 // Qualification profile derived from the user's own vault: top skills by
 // usage, years active, strongest credential types, and suggested role
 // keywords. This is the "what am I qualified for" input to job search.
@@ -17,35 +22,34 @@ jobsRouter.get(
   asyncHandler(async (req, res) => {
     const userId = requireUserId(req);
 
-    const [skills, range, byType, total] = await Promise.all([
-      prisma.skill.findMany({
-        where: { userId },
-        include: { _count: { select: { credentials: true } } },
-        orderBy: { credentials: { _count: "desc" } },
-        take: 10,
-      }),
-      prisma.credential.aggregate({
-        where: { userId, date: { not: null } },
-        _min: { date: true },
-        _max: { date: true },
-      }),
-      prisma.credential.groupBy({ by: ["type"], where: { userId }, _count: { _all: true } }),
-      prisma.credential.count({ where: { userId } }),
-    ]);
+    const data = await cached(`qualifications:${userId}`, QUALIFICATIONS_TTL_MS, async () => {
+      const [skills, range, byType, total] = await Promise.all([
+        prisma.skill.findMany({
+          where: { userId },
+          include: { _count: { select: { credentials: true } } },
+          orderBy: { credentials: { _count: "desc" } },
+          take: 10,
+        }),
+        prisma.credential.aggregate({
+          where: { userId, date: { not: null } },
+          _min: { date: true },
+          _max: { date: true },
+        }),
+        prisma.credential.groupBy({ by: ["type"], where: { userId }, _count: { _all: true } }),
+        prisma.credential.count({ where: { userId } }),
+      ]);
 
-    const topSkills = skills.map((s) => ({
-      id: s.id,
-      name: s.name,
-      credentialCount: s._count.credentials,
-    }));
-    const [a, b] = topSkills.map((s) => s.name);
-    const suggestedQueries = [...new Set([a ? `${a} developer` : null, a && b ? `${a} ${b}` : null, a])].filter(
-      (q): q is string => Boolean(q),
-    );
+      const topSkills = skills.map((s) => ({
+        id: s.id,
+        name: s.name,
+        credentialCount: s._count.credentials,
+      }));
+      const [a, b] = topSkills.map((s) => s.name);
+      const suggestedQueries = [...new Set([a ? `${a} developer` : null, a && b ? `${a} ${b}` : null, a])].filter(
+        (q): q is string => Boolean(q),
+      );
 
-    res.json({
-      ok: true,
-      data: {
+      return {
         topSkills,
         totalCredentials: total,
         yearsActive:
@@ -54,8 +58,10 @@ jobsRouter.get(
             : null,
         byType: Object.fromEntries(byType.map((g) => [g.type, g._count._all])),
         suggestedQueries,
-      },
+      };
     });
+
+    res.json({ ok: true, data });
   }),
 );
 

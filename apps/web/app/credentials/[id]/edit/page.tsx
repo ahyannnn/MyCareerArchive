@@ -19,6 +19,7 @@ import {
   formValueFrom,
   type CredentialFormValue,
 } from "@/components/credential-form";
+import { useInvalidateVault } from "@/lib/queries";
 
 function toUpdatePayload(v: CredentialFormValue) {
   return {
@@ -38,6 +39,7 @@ function toUpdatePayload(v: CredentialFormValue) {
 export default function EditCredentialPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
+  const invalidateVault = useInvalidateVault();
   const [original, setOriginal] = useState<CredentialSummary | null>(null);
   const [skills, setSkills] = useState<NamedRef[]>([]);
   const [tags, setTags] = useState<NamedRef[]>([]);
@@ -76,6 +78,7 @@ export default function EditCredentialPage({ params }: { params: { id: string } 
     setError(null);
     try {
       await credentialsApi.update(id, toUpdatePayload(v));
+      invalidateVault();
       toast.success("Credential updated");
       router.push(`/credentials/${id}`);
       router.refresh();

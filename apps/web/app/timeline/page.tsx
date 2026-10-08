@@ -5,10 +5,8 @@ import Link from "next/link";
 import { CalendarRange, Plus, SearchX } from "lucide-react";
 import {
   CREDENTIAL_TYPES,
-  timelineApi,
-  type TimelineResult,
 } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
+import { useTimeline } from "@/lib/queries";import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,9 +48,6 @@ function useDebounced<T>(value: T, delayMs: number): T {
 
 export default function TimelinePage() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [result, setResult] = useState<TimelineResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const debounced = useDebounced(filters, 350);
 
@@ -60,37 +55,16 @@ export default function TimelinePage() {
     setFilters((f) => ({ ...f, ...patch }));
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    timelineApi
-      .list({
-        search: debounced.search || undefined,
-        type: debounced.type || undefined,
-        skill: debounced.skill || undefined,
-        tag: debounced.tag || undefined,
-        year: debounced.year ? Number(debounced.year) : undefined,
-        sort: debounced.sort,
-        page: 1,
-        pageSize: PAGE_SIZE,
-      })
-      .then((res) => {
-        if (!cancelled) {
-          setResult(res);
-          setLoading(false);
-        }
-      })
-      .catch((e: Error) => {
-        if (!cancelled) {
-          setError(e.message ?? "Could not load timeline");
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced]);
+  const { data: result, isLoading: loading, error } = useTimeline({
+    search: debounced.search || undefined,
+    type: debounced.type || undefined,
+    skill: debounced.skill || undefined,
+    tag: debounced.tag || undefined,
+    year: debounced.year ? Number(debounced.year) : undefined,
+    sort: debounced.sort,
+    page: 1,
+    pageSize: PAGE_SIZE,
+  });
 
   const hasActiveFilters =
     filters.search || filters.type || filters.skill || filters.tag || filters.year;
@@ -193,7 +167,7 @@ export default function TimelinePage() {
 
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
-          {error}
+          {error.message ?? "Could not load timeline"}
         </p>
       )}
 

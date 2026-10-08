@@ -1,6 +1,7 @@
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../index.js";
+import { __resetCacheForTests } from "../lib/cache.js";
 import { __resetJobsCacheForTests, __setJobsFetchForTests } from "../lib/jobs.js";
 import { createTestAgent, deleteTestUser, type TestAgent } from "../test-utils/db.js";
 
@@ -239,5 +240,23 @@ describe("POST /api/jobs/search validation", () => {
   it("requires a query when the vault has no skills", async () => {
     const res = await userB.agent.post("/api/jobs/search").send({ scope: "international" });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("phase 9 perf: qualifications aggregate caching", () => {
+  it("serves stale aggregates within TTL and refreshes after reset", async () => {
+    const before = await userA.agent.get("/api/career/qualifications");
+    expect(before.status).toBe(200);
+    const countBefore = (before.body.data.topSkills as unknown[]).length;
+
+    const created = await userA.agent.post("/api/skills").send({ name: "JobsCachedSkill" });
+    expect(created.status).toBe(201);
+
+    const cachedRes = await userA.agent.get("/api/career/qualifications");
+    expect((cachedRes.body.data.topSkills as unknown[]).length).toBe(countBefore);
+
+    __resetCacheForTests();
+    const fresh = await userA.agent.get("/api/career/qualifications");
+    expect((fresh.body.data.topSkills as unknown[]).length).toBe(countBefore + 1);
   });
 });

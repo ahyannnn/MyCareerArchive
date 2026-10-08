@@ -58,7 +58,9 @@ DELETE /api/evidence/:id
   success). Email delivery via Resend (`RESEND_API_KEY`); without a key
   the API logs the link instead of sending (dev/test fallback).
 - Sessions: 7-day expiry, sliding refresh daily, stored in Postgres
-  (`Session`/`Account`/`Verification` tables).
+  (`Session`/`Account`/`Verification` tables). Hot-path validation skips the
+  DB via the signed session cookie cache (`cookieCache`, 5 min); revocation
+  propagates within that window, logout clears cookies immediately.
 - CORS: web origin only + `credentials`. Frontend sends cookies automatically.
 
 ## Envelopes
@@ -143,10 +145,14 @@ POST   /api/portfolio/build
   credential level (`pageSize` default 50, max 100) and grouped server-side:
   `{ ok, data: [{ year: number | null, count, credentials: CredentialSummary[] }], meta: { page, pageSize, total, totalYears } }`.
   The `null` group holds undated credentials and always sorts last.
+  `totalYears` is a single `COUNT(DISTINCT EXTRACT(YEAR …))` aggregate under
+  the same filters (undated counts as its own group), not a full date scan.
 - `GET /api/career/profile` — `{ totals: { credentials, evidence, skills,
   tags, organizations, byType }, dateRange: { earliest, latest },
   topSkills[5], topTags[5], evidenceCoverage: { withEvidence, withoutEvidence } }`.
   `withEvidence` counts credentials having ≥1 `UPLOADED` evidence file.
+  Scalars come from one raw-SQL aggregate (was 8 queries); the whole response
+  is cached per user for 60s (user-scoped key, no cross-user leakage).
 - `GET /api/career/skills` — per-skill evidence (deliberately no proficiency
   percentage): `[{ id, name, credentialCount, firstUsed, lastUsed,
   credentials: [{ id, title, date, type }] }]` sorted by `count` (default),
@@ -179,6 +185,7 @@ POST   /api/jobs/search
 - `GET /api/career/qualifications` — `{ topSkills[10] (by credentialCount),
   totalCredentials, yearsActive: { start, end } | null, byType,
   suggestedQueries[≤3] }`. Empty vault → empty lists and `yearsActive: null`.
+  Cached per user for 60s (same contract as the profile cache).
 - `POST /api/jobs/search` — `{ scope: "local" | "international", query?,
   location?, skills?[], limit? (1–50, default 20) }` → `{ jobs:
   [{ id, title, company, location, workType: ONSITE|REMOTE|HYBRID|UNKNOWN,

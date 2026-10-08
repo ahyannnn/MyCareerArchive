@@ -91,6 +91,12 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // sliding refresh at most once a day
+    // Fast path: the signed session+user payload rides in a cookie, so
+    // get-session (and every userContext validation) skips the Neon Session
+    // lookup on the hot path. The DB is still hit on refresh days and when
+    // the cache cookie is absent/invalid. Tradeoff: server-side revocation
+    // takes up to maxAge to propagate; logout clears cookies immediately.
+    cookieCache: { enabled: true, maxAge: 60 * 5 }, // 5 minutes
   },
 });
 

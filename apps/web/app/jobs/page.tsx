@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Briefcase, GraduationCap, SearchX } from "lucide-react";
 import {
   jobsApi,
   type JobsSearchResult,
   type JobScope,
-  type QualificationProfile,
   type WorkType,
 } from "@/lib/api-client";
+import { useQualifications } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,31 +43,13 @@ function postedLabel(iso: string | null): string | null {
 
 export default function JobsPage() {
   const [scope, setScope] = useState<JobScope>("local");
-  const [profile, setProfile] = useState<QualificationProfile | null>(null);
   const [query, setQuery] = useState("");
   const [workType, setWorkType] = useState<WorkType | "">("");
   const [result, setResult] = useState<JobsSearchResult | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    jobsApi
-      .qualifications()
-      .then((p) => {
-        if (!cancelled) {
-          setProfile(p);
-          setLoadingProfile(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoadingProfile(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: profile, isLoading: loadingProfile } = useQualifications();
 
   const search = useCallback(
     async (override?: { scope?: JobScope; query?: string }) => {
@@ -82,6 +64,8 @@ export default function JobsPage() {
       setSearching(true);
       setError(null);
       try {
+        // User-initiated only (provider quota is precious); repeat identical
+        // searches are served from the query cache inside staleTime.
         const res = await jobsApi.search({
           scope: activeScope,
           query: q || undefined,

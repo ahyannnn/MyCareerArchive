@@ -12,6 +12,7 @@ import {
   type NamedRef,
   type OrganizationRef,
 } from "@/lib/api-client";
+import { useInvalidateVault } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -178,6 +179,7 @@ export function CredentialForm({
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgWebsite, setNewOrgWebsite] = useState("");
   const [orgError, setOrgError] = useState<string | null>(null);
+  const invalidateVault = useInvalidateVault();
 
   function patch(p: Partial<CredentialFormValue>) {
     setValue((v) => ({ ...v, ...p }));
@@ -200,6 +202,7 @@ export function CredentialForm({
       });
       onOrgsChange([...orgs, created]);
       patch({ organizationId: created.id });
+      invalidateVault();
       setNewOrgMode(false);
       setNewOrgName("");
       setNewOrgWebsite("");

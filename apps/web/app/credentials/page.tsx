@@ -3,13 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, SearchX } from "lucide-react";
-import {
-  CREDENTIAL_TYPES,
-  credentialsApi,
-  organizationsApi,
-  type CredentialList,
-  type OrganizationRef,
-} from "@/lib/api-client";
+import { CREDENTIAL_TYPES } from "@/lib/api-client";
+import { useCredentialList, useOrganizations } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,10 +56,6 @@ function useDebounced<T>(value: T, delayMs: number): T {
 export default function VaultPage() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const [list, setList] = useState<CredentialList | null>(null);
-  const [orgs, setOrgs] = useState<OrganizationRef[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const debounced = useDebounced(filters, 350);
 
@@ -73,42 +64,20 @@ export default function VaultPage() {
     setPage(1);
   }, []);
 
-  useEffect(() => {
-    organizationsApi.list().then(setOrgs).catch(() => setOrgs([]));
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    credentialsApi
-      .list({
-        search: debounced.search || undefined,
-        type: debounced.type || undefined,
-        skill: debounced.skill || undefined,
-        tag: debounced.tag || undefined,
-        organizationId: debounced.organizationId || undefined,
-        year: debounced.year ? Number(debounced.year) : undefined,
-        sort: debounced.sort,
-        page,
-        pageSize: PAGE_SIZE,
-      })
-      .then((res) => {
-        if (!cancelled) {
-          setList(res);
-          setLoading(false);
-        }
-      })
-      .catch((e: Error) => {
-        if (!cancelled) {
-          setError(e.message ?? "Could not load credentials");
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced, page]);
+  // Cached + background-refreshed: revisits inside staleTime cost nothing,
+  // and the previous page stays visible while the next one loads.
+  const { data: list, isLoading: loading, error } = useCredentialList({
+    search: debounced.search || undefined,
+    type: debounced.type || undefined,
+    skill: debounced.skill || undefined,
+    tag: debounced.tag || undefined,
+    organizationId: debounced.organizationId || undefined,
+    year: debounced.year ? Number(debounced.year) : undefined,
+    sort: debounced.sort,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  const { data: orgs = [] } = useOrganizations();
 
   const totalPages = list ? Math.max(1, Math.ceil(list.meta.total / PAGE_SIZE)) : 1;
   const hasActiveFilters =
@@ -237,7 +206,7 @@ export default function VaultPage() {
 
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
-          {error}
+          {error.message ?? "Could not load credentials"}
         </p>
       )}
 

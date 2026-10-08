@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { cache } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -11,7 +12,9 @@ export interface SessionUser {
 
 // Server-side session lookup: forwards the browser's cookies to Express,
 // which validates the session against Postgres. Returns null when signed out.
-export async function getSessionUser(): Promise<SessionUser | null> {
+// Wrapped in React cache() so the header and the page share ONE get-session
+// round trip per request instead of each paying for it.
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const cookie = headers().get("cookie") ?? "";
   if (!cookie) return null;
   try {
@@ -25,7 +28,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   } catch {
     return null;
   }
-}
+});
 
 // Authenticated API fetch from server components: same cookie forwarding,
 // so Express sees the session and scopes data to the user.

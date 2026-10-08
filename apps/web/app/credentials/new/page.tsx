@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialForm, EMPTY_FORM, type CredentialFormValue } from "@/components/credential-form";
+import { useInvalidateVault } from "@/lib/queries";
 
 function toCreatePayload(v: CredentialFormValue) {
   return {
@@ -32,6 +33,7 @@ function toCreatePayload(v: CredentialFormValue) {
 
 export default function NewCredentialPage() {
   const router = useRouter();
+  const invalidateVault = useInvalidateVault();
   const [skills, setSkills] = useState<NamedRef[]>([]);
   const [tags, setTags] = useState<NamedRef[]>([]);
   const [orgs, setOrgs] = useState<OrganizationRef[]>([]);
@@ -55,6 +57,7 @@ export default function NewCredentialPage() {
     setError(null);
     try {
       const created = await credentialsApi.create(toCreatePayload(v));
+      invalidateVault();
       toast.success("Credential created");
       router.push(`/credentials/${created.id}`);
       router.refresh();

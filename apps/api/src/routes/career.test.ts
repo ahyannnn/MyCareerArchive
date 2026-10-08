@@ -1,6 +1,7 @@
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../index.js";
+import { __resetCacheForTests } from "../lib/cache.js";
 import { createTestAgent, deleteTestUser, type TestAgent } from "../test-utils/db.js";
 
 const app = createApp();
@@ -272,5 +273,44 @@ describe("POST /api/portfolio/build", () => {
   it("rejects foreign credentialIds with NOT_FOUND", async () => {
     const res = await userB.agent.post("/api/portfolio/build").send({ credentialIds: [credentialIds.beta] });
     expect(res.status).toBe(404);
+  });
+});
+
+describe("phase 9 perf: timeline year parity (raw-SQL vs old full-scan)", () => {
+  it("counts distinct years under the same filters", async () => {
+    const all = await userA.agent.get("/api/timeline").query({ pageSize: 50 });
+    expect(all.status).toBe(200);
+    const years = new Set(all.body.data.map((g: { year: number | null }) => g.year));
+    expect(all.body.meta.totalYears).toBe(years.size);
+
+    const y2024 = await userA.agent.get("/api/timeline").query({ year: 2024, pageSize: 50 });
+    expect(y2024.body.meta.totalYears).toBe(1);
+    expect(y2024.body.data).toHaveLength(1);
+
+    const certs = await userA.agent.get("/api/timeline").query({ type: "CERTIFICATE", pageSize: 50 });
+    expect(certs.body.meta.totalYears).toBe(1);
+  });
+});
+
+describe("phase 9 perf: profile aggregate caching", () => {
+  it("serves stale aggregates within TTL, isolates users, refreshes after reset", async () => {
+    const before = await userA.agent.get("/api/career/profile");
+    expect(before.status).toBe(200);
+    const totalBefore = before.body.data.totals.credentials as number;
+
+    const created = await userA.agent.post("/api/credentials").send({ title: "Cache Probe", type: "OTHER" });
+    expect(created.status).toBe(201);
+
+    // Still cached: new credential invisible until TTL/reset.
+    const cachedRes = await userA.agent.get("/api/career/profile");
+    expect(cachedRes.body.data.totals.credentials).toBe(totalBefore);
+
+    // Isolation: user B never sees user A's cached aggregates.
+    const other = await userB.agent.get("/api/career/profile");
+    expect(other.body.data.totals.credentials).toBe(0);
+
+    __resetCacheForTests();
+    const fresh = await userA.agent.get("/api/career/profile");
+    expect(fresh.body.data.totals.credentials).toBe(totalBefore + 1);
   });
 });

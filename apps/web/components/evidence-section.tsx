@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { evidenceApi, type EvidenceItem } from "@/lib/api-client";
+import { useInvalidateVault } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +57,7 @@ interface PendingUpload {
 }
 
 export function EvidenceSection({ credentialId }: { credentialId: string }) {
+  const invalidateVault = useInvalidateVault();
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<PendingUpload[]>([]);
@@ -109,6 +111,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
       await evidenceApi.complete(evidence.id);
       drop();
       toast.success(`${file.name} uploaded`);
+      invalidateVault();
       await refresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Upload failed";
@@ -143,6 +146,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
       await evidenceApi.remove(deleting.id);
       toast.success(`${deleting.fileName} deleted`);
       setDeleting(null);
+      invalidateVault();
       await refresh();
     } catch {
       toast.error("Could not delete the file");

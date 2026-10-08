@@ -67,8 +67,36 @@ describe("auth flows", () => {
     expect(again.status).toBe(200);
   });
 
-  it("rejects wrong passwords", async () => {
-    const res = await request(app)
+  it("serves get-session from the signed cookie cache without a DB read", async () => {
+    // Proves the cookieCache fast path: with every server-side Session row
+    // deleted, a valid signed cache cookie must still authenticate (this is
+    // the ≤5min revocation-propagation tradeoff, accepted deliberately).
+    const check = await user.agent.get("/api/auth/get-session").set("Origin", ORIGIN);
+    expect(check.status).toBe(200);
+    await prisma.session.deleteMany({ where: { userId: user.userId } });
+    try {
+      const cached = await user.agent.get("/api/auth/get-session").set("Origin", ORIGIN);
+      expect(cached.status).toBe(200);
+      expect(cached.body?.user?.email).toBe(user.email);
+      // A forged session cookie still fails closed (bad signature → DB
+      // lookup → no row → 401), so the fast path weakens nothing.
+      const forged = await request(app)
+        .get("/api/credentials")
+        .set("Origin", ORIGIN)
+        .set("Cookie", "better-auth.session_token=forged-token-value");
+      expect(forged.status).toBe(401);
+      expect(forged.body.error).toBe("UNAUTHENTICATED");
+    } finally {
+      // Restore a real session row for the rest of the suite.
+      const signIn = await user.agent
+        .post("/api/auth/sign-in/email")
+        .set("Origin", ORIGIN)
+        .send({ email: user.email, password: user.password });
+      expect(signIn.status).toBe(200);
+    }
+  });
+
+  it("rejects wrong passwords", async () => {    const res = await request(app)
       .post("/api/auth/sign-in/email")
       .set("Origin", ORIGIN)
       .send({ email: user.email, password: "WrongPassword999!" });

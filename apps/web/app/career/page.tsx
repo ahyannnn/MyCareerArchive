@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Archive, Plus } from "lucide-react";
-import { careerApi, type CareerProfile, type SkillHistoryItem } from "@/lib/api-client";
+import { useCareerProfile, useSkillHistory } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,41 +32,25 @@ function dayOf(iso: string | null): string {
 }
 
 export default function CareerPage() {
-  const [profile, setProfile] = useState<CareerProfile | null>(null);
-  const [skills, setSkills] = useState<SkillHistoryItem[] | null>(null);
   const [sort, setSort] = useState("count");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([careerApi.profile(), careerApi.skills(sort, debouncedSearch || undefined)])
-      .then(([p, s]) => {
-        if (!cancelled) {
-          setProfile(p);
-          setSkills(s);
-          setLoading(false);
-        }
-      })
-      .catch((e: Error) => {
-        if (!cancelled) {
-          setError(e.message ?? "Could not load career profile");
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sort, debouncedSearch]);
+  // Independent queries: re-sorting skills never refires the profile
+  // aggregate, and each caches under its own key.
+  const { data: profile, isLoading: profileLoading, error: profileError } = useCareerProfile();
+  const { data: skills, isLoading: skillsLoading, error: skillsError } = useSkillHistory(
+    sort,
+    debouncedSearch || undefined,
+  );
+  const loading = profileLoading && !profile;
+  const skillsInitialLoading = skillsLoading && !skills;
+  const error = profileError ?? skillsError;
 
   const stats = profile
     ? [
@@ -102,7 +86,7 @@ export default function CareerPage() {
 
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
-          {error}
+          {error.message ?? "Could not load career profile"}
         </p>
       )}
 
@@ -221,7 +205,7 @@ export default function CareerPage() {
         </div>
       </div>
 
-      {loading || !skills ? (
+      {skillsInitialLoading || !skills ? (
         <div className="mt-4 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-16" />
