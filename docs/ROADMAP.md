@@ -2,8 +2,8 @@
 
 ## Project Status
 
-Current Phase: Phase 5 — Evidence Storage (next up)
-Current Milestone: Phases 1–4 complete, verified live (25 API tests green)
+Current Phase: Phase 9 — Job matching (deterministic; AI deferred)
+Current Milestone: Phases 1–8 complete, verified live (66 API tests green) + deterministic job matching live (10 jobs tests green)
 
 ---
 
@@ -120,20 +120,20 @@ Phase 1 is complete only when:
 
 # Phase 8 — Career Features
 
-- [ ] Timeline
-- [ ] Career profile
-- [ ] Skill history
-- [ ] Resume builder
-- [ ] Portfolio project generation
+- [x] Timeline (`GET /api/timeline` year-grouped + `/timeline` page with type/year filters)
+- [x] Career profile (`GET /api/career/profile` + `/career` stats/coverage)
+- [x] Skill history (`GET /api/career/skills` counts + first/last use, no proficiency scores + `/career` table)
+- [x] Resume builder (deterministic `POST /api/resume/build` → markdown + print, `/resume` page)
+- [x] Portfolio project generation (`POST /api/portfolio/build` all types → per-entry + combined markdown, `/portfolio` page)
 
 ---
 
-# Phase 9 — AI
+# Phase 9 — AI (deferred: deterministic job matching shipped first)
 
-- [ ] AI career search
+
 - [ ] Resume bullet generation
 - [ ] Portfolio description generation
-- [ ] Job matching
+- [x] Job matching (deterministic, no AI: `GET /api/career/qualifications` + `POST /api/jobs/search`; local PH via JSearch, international remote via Remotive; `/jobs` page with Local/International tabs and skill-overlap scoring)
 - [ ] Interview preparation
 
 ---

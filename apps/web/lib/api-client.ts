@@ -226,8 +226,7 @@ export const organizationsApi = {
   },
 };
 
-export const evidenceApi = {
-  list(credentialId: string): Promise<EvidenceItem[]> {
+export const evidenceApi = {  list(credentialId: string): Promise<EvidenceItem[]> {
     return request<EvidenceItem[]>(`/api/credentials/${credentialId}/evidence`, { method: "GET" });
   },
   async initiate(
@@ -247,5 +246,201 @@ export const evidenceApi = {
   },
   remove(id: string): Promise<void> {
     return request<void>(`/api/evidence/${id}`, { method: "DELETE" });
+  },
+};
+
+// --- Phase 8: career features -----------------------------------------------
+// DTOs mirror apps/api/src/routes/career.ts. All deterministic (non-AI):
+// the API only ever returns verbatim stored credential data.
+
+export interface TimelineGroup {
+  year: number | null;
+  count: number;
+  credentials: CredentialSummary[];
+}
+
+export interface TimelineResult {
+  ok: boolean;
+  data: TimelineGroup[];
+  meta: { page: number; pageSize: number; total: number; totalYears: number };
+}
+
+export interface TimelineQuery {
+  search?: string;
+  type?: string;
+  skill?: string;
+  tag?: string;
+  year?: number;
+  sort?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CareerProfile {
+  totals: {
+    credentials: number;
+    evidence: number;
+    skills: number;
+    tags: number;
+    organizations: number;
+    byType: Record<CredentialType, number>;
+  };
+  dateRange: { earliest: string | null; latest: string | null };
+  topSkills: NamedRef[];
+  topTags: NamedRef[];
+  evidenceCoverage: { withEvidence: number; withoutEvidence: number };
+}
+
+export interface SkillHistoryItem {
+  id: string;
+  name: string;
+  credentialCount: number;
+  firstUsed: string | null;
+  lastUsed: string | null;
+  credentials: { id: string; title: string; date: string | null; type: CredentialType }[];
+}
+
+export interface ResumeBuildResult {
+  matched: CredentialSummary[];
+  markdown: string;
+  targetRole: string | null;
+}
+
+export interface PortfolioEntry {
+  credential: CredentialSummary;
+  markdown: string;
+}
+
+export interface PortfolioBuildResult {
+  entries: PortfolioEntry[];
+  combinedMarkdown: string;
+}
+
+function toTimelineQuery(q: TimelineQuery): string {
+  const params = new URLSearchParams();
+  if (q.search) params.set("search", q.search);
+  if (q.type) params.set("type", q.type);
+  if (q.skill) params.set("skill", q.skill);
+  if (q.tag) params.set("tag", q.tag);
+  if (q.year) params.set("year", String(q.year));
+  if (q.sort) params.set("sort", q.sort);
+  if (q.page) params.set("page", String(q.page));
+  if (q.pageSize) params.set("pageSize", String(q.pageSize));
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
+
+async function getWithMeta<T>(path: string): Promise<T> {
+  const res = await fetch(`${API}${path}`, { credentials: "include", method: "GET" });
+  const body = (await res.json().catch(() => null)) as (T & { ok?: boolean; error?: string; message?: string }) | null;
+  if (!res.ok || !body || body.ok === false) {
+    throw new ApiError(res.status, body?.error ?? "REQUEST_FAILED", body?.message);
+  }
+  return body;
+}
+
+export const timelineApi = {
+  list(q: TimelineQuery): Promise<TimelineResult> {
+    return getWithMeta<TimelineResult>(`/api/timeline${toTimelineQuery(q)}`);
+  },
+};
+
+export const careerApi = {
+  profile(): Promise<CareerProfile> {
+    return request<CareerProfile>("/api/career/profile", { method: "GET" });
+  },
+  skills(sort?: string, search?: string): Promise<SkillHistoryItem[]> {
+    const params = new URLSearchParams();
+    if (sort) params.set("sort", sort);
+    if (search) params.set("search", search);
+    const s = params.toString();
+    return request<SkillHistoryItem[]>(`/api/career/skills${s ? `?${s}` : ""}`, { method: "GET" });
+  },
+};
+
+export const resumeApi = {
+  build(input: {
+    targetRole?: string;
+    skill?: string;
+    tag?: string;
+    includeTypes?: CredentialType[];
+    credentialIds?: string[];
+    limit?: number;
+  }): Promise<ResumeBuildResult> {
+    return request<ResumeBuildResult>("/api/resume/build", { method: "POST", body: JSON.stringify(input) });
+  },
+};
+export const portfolioApi = {
+  build(input: {
+    credentialIds?: string[];
+    type?: CredentialType;
+    skill?: string;
+    tag?: string;
+    search?: string;
+    limit?: number;
+  }): Promise<PortfolioBuildResult> {
+    return request<PortfolioBuildResult>("/api/portfolio/build", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+};
+
+// --- Job matching (deterministic, no AI) ------------------------------------
+// Shapes mirror apps/api/src/lib/jobs.ts + routes/jobs.ts. Scores are plain
+// keyword overlap between a posting and the user's own skill names.
+
+export type JobScope = "local" | "international";
+export type WorkType = "ONSITE" | "REMOTE" | "HYBRID" | "UNKNOWN";
+
+export interface QualificationProfile {
+  topSkills: NamedRef[];
+  totalCredentials: number;
+  yearsActive: { start: string; end: string } | null;
+  byType: Partial<Record<CredentialType, number>>;
+  suggestedQueries: string[];
+}
+
+export interface JobResult {
+  id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  workType: WorkType;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryText: string | null;
+  postedAt: string | null;
+  url: string | null;
+  snippet: string | null;
+  source: "JSEARCH" | "REMOTIVE";
+  score: number;
+  matchedSkills: string[];
+}
+
+export interface JobsSearchResult {
+  jobs: JobResult[];
+  cached: boolean;
+  scope: JobScope;
+  query: string;
+  location: string;
+  totalSkills: number;
+}
+
+export const jobsApi = {
+  qualifications(): Promise<QualificationProfile> {
+    return request<QualificationProfile>("/api/career/qualifications", { method: "GET" });
+  },
+  search(input: {
+    scope: JobScope;
+    query?: string;
+    location?: string;
+    skills?: string[];
+    limit?: number;
+  }): Promise<JobsSearchResult> {
+    return request<JobsSearchResult>("/api/jobs/search", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   },
 };

@@ -225,7 +225,7 @@ export function CredentialForm({
               id="title"
               required
               maxLength={200}
-              placeholder="e.g. SOLARIS — Solar Pre-Assessment System"
+              placeholder="e.g. SOLARIS: Solar Pre-Assessment System"
               value={value.title}
               onChange={(e) => patch({ title: e.target.value })}
             />

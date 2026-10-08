@@ -7,6 +7,8 @@ import { auth } from "./auth.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userContext.js";
 import { credentialsRouter } from "./routes/credentials.js";
+import { careerRouter } from "./routes/career.js";
+import { jobsRouter } from "./routes/jobs.js";
 import { evidenceRouter } from "./routes/evidence.js";
 import { healthRouter } from "./routes/health.js";
 import { organizationsRouter } from "./routes/organizations.js";
@@ -51,6 +53,8 @@ export function createApp() {
   // Protected: real session auth (Phase 4) + ownership-scoped CRUD.
   app.use("/api", userContext);
   app.use("/api", credentialsRouter);
+  app.use("/api", careerRouter);
+  app.use("/api", jobsRouter);
   app.use("/api", evidenceRouter);
   app.use("/api", skillsRouter);
   app.use("/api", tagsRouter);

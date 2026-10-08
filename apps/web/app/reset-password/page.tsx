@@ -21,7 +21,7 @@ function ResetForm() {
     const { error } = await authClient.resetPassword({ newPassword: password, token });
     setPending(false);
     if (error) {
-      setError(error.message ?? "Reset failed — the link may have expired. Request a new one.");
+      setError(error.message ?? "Reset failed. The link may have expired. Request a new one.");
       return;
     }
     router.push("/login");

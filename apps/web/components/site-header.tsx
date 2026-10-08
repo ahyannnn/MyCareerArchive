@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/server-session";
 import { Button } from "@/components/ui/button";
 import { SignOutMenu } from "@/components/site-header-user";
@@ -14,10 +14,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-semibold">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Archive className="size-4" />
-          </span>
-          <span className="hidden sm:inline">MyCareerArchive</span>
+          <Logo />
         </Link>
 
         {user && (
@@ -27,6 +24,21 @@ export async function SiteHeader() {
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/credentials">Vault</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/timeline">Timeline</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/career">Career</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/jobs">Jobs</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
+              <Link href="/resume">Resume</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
+              <Link href="/portfolio">Portfolio</Link>
             </Button>
           </nav>
         )}

@@ -74,7 +74,7 @@ export default function NewCredentialPage() {
       </p>
       <h1 className="mt-1 text-3xl font-bold">New credential</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Capture what just happened — you can attach evidence files next.
+        Capture what just happened. You can attach evidence files next.
       </p>
       <div className="mt-6">
         {loading ? (

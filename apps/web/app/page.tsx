@@ -7,7 +7,7 @@ async function getApiHealth(): Promise<{ ok: boolean; service?: string } | { err
     if (!res.ok) return { error: `API responded with ${res.status}` };
     return (await res.json()) as { ok: boolean; service?: string };
   } catch {
-    return { error: "API unreachable — start it with `npm run dev:api`" };
+    return { error: "API unreachable. Start it with `npm run dev:api`" };
   }
 }
 
@@ -17,11 +17,11 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">Phase 4 — Authentication</p>
+      <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">Phase 4: Authentication</p>
       <h1 className="mt-2 text-4xl font-bold">MyCareerArchive</h1>
       <p className="mt-4 text-zinc-600">
-        MyCareerArchive. Register with email or sign in with Google/GitHub —
-        every credential and its evidence stays scoped to your account.
+        MyCareerArchive. Register with email or sign in with Google/GitHub.
+        Every credential and its evidence stays scoped to your account.
       </p>
 
       <div className="mt-6">

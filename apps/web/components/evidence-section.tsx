@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 
 export function formatBytes(size: number | null): string {
-  if (size === null || size === undefined) return "—";
+  if (size === null || size === undefined) return "Unknown size";
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -88,7 +88,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
     const drop = () => setPending((p) => p.filter((u) => u.key !== key));
 
     if (!file.type) {
-      setPhase("failed", "Could not detect the file type — rename with a known extension and retry.");
+      setPhase("failed", "Could not detect the file type. Rename the file with a known extension and retry.");
       return;
     }
     try {
@@ -218,7 +218,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
         <p className="text-sm text-muted-foreground">Loading evidence…</p>
       ) : items.length === 0 && pending.length === 0 ? (
         <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-          No evidence yet — attach the certificate, screenshot, or document behind this credential.
+          No evidence yet. Attach the certificate, screenshot, or document behind this credential.
         </p>
       ) : (
         <ul className="space-y-2">

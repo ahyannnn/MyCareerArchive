@@ -123,6 +123,78 @@ DELETE /api/organizations/:id
 
 Deleting an organization keeps credential history (`organizationId` → null).
 
+## Career features (Phase 8, deterministic — no AI)
+
+Timeline, profile, skill history, and document builders. Every response is
+assembled verbatim from stored credentials; nothing is invented (AI phrasing
+is a Phase 9 concern). All routes are protected and user-scoped like the rest
+of the API.
+
+```http
+GET    /api/timeline?search=&type=&skill=&tag=&year=&sort=date-desc|date-asc&page=&pageSize=
+GET    /api/career/profile
+GET    /api/career/skills?search=&sort=count|recent|name
+POST   /api/resume/build
+POST   /api/portfolio/build
+```
+
+- `GET /api/timeline` — same filter vocabulary as `GET /api/credentials`
+  (subset: `search`, `type`, `skill`, `tag`, `year`), paginated at the
+  credential level (`pageSize` default 50, max 100) and grouped server-side:
+  `{ ok, data: [{ year: number | null, count, credentials: CredentialSummary[] }], meta: { page, pageSize, total, totalYears } }`.
+  The `null` group holds undated credentials and always sorts last.
+- `GET /api/career/profile` — `{ totals: { credentials, evidence, skills,
+  tags, organizations, byType }, dateRange: { earliest, latest },
+  topSkills[5], topTags[5], evidenceCoverage: { withEvidence, withoutEvidence } }`.
+  `withEvidence` counts credentials having ≥1 `UPLOADED` evidence file.
+- `GET /api/career/skills` — per-skill evidence (deliberately no proficiency
+  percentage): `[{ id, name, credentialCount, firstUsed, lastUsed,
+  credentials: [{ id, title, date, type }] }]` sorted by `count` (default),
+  `recent`, or `name`.
+- `POST /api/resume/build` — `{ targetRole?, skill?, tag?, includeTypes?[],
+  credentialIds?[], limit? (1–50, default 20) }` → `{ matched:
+  CredentialSummary[], markdown, targetRole }`. Without `credentialIds` the
+  API ranks candidates by keyword overlap between the target role and
+  title/skills/description/organization/tags; with `credentialIds` it builds
+  from exactly that selection (foreign ids → `404`). The markdown contains
+  only stored field values plus a within-selection skill frequency list.
+- `POST /api/portfolio/build` — `{ credentialIds?[], type?, skill?, tag?,
+  search?, limit? (1–100, default 50) }` → `{ entries: [{ credential,
+  markdown }], combinedMarkdown }`. All credential types are eligible; each
+  entry lists recorded skills/tags/links and on-file (`UPLOADED`) evidence
+  names.
+
+## Job matching (deterministic — no AI)
+
+Qualification-based career search over external listing providers. The
+qualification profile is derived from the user's own vault; postings are
+scored by plain keyword overlap between the posting text and the user's skill
+names (+2 per skill in the title, +1 in the snippet). No AI is involved.
+
+```http
+GET    /api/career/qualifications
+POST   /api/jobs/search
+```
+
+- `GET /api/career/qualifications` — `{ topSkills[10] (by credentialCount),
+  totalCredentials, yearsActive: { start, end } | null, byType,
+  suggestedQueries[≤3] }`. Empty vault → empty lists and `yearsActive: null`.
+- `POST /api/jobs/search` — `{ scope: "local" | "international", query?,
+  location?, skills?[], limit? (1–50, default 20) }` → `{ jobs:
+  [{ id, title, company, location, workType: ONSITE|REMOTE|HYBRID|UNKNOWN,
+  salaryMin/Max/Text, postedAt, url, snippet, source, score, matchedSkills }],
+  cached, scope, query, location, totalSkills }`.
+  - `local` = Philippines onsite/remote/hybrid via JSearch (Google-for-Jobs
+    aggregate). `location` defaults to `"Philippines"`. Requires
+    `JSEARCH_API_KEY`, otherwise `503 JOBS_UNCONFIGURED`.
+  - `international` = worldwide remote-only via the free Remotive public API
+    (no key; credit Remotive as the source wherever listings display).
+  - `query` defaults to the user's top skill; `skills` defaults to the user's
+    top 10 skills. With neither (empty vault, no query) → `400`.
+  - Raw provider results are cached per `(scope, query, location)` for 6h
+    (JSearch free quota is 200 calls/month); scoring runs per request so
+    cached listings stay correct for every user. Response includes `cached`.
+
 ## Ownership
 
 Every query is scoped to the requesting user; cross-user ids behave as `404`,

@@ -43,7 +43,7 @@ export default async function DashboardPage() {
           <h1 className="mt-1 text-3xl font-bold">Welcome, {user.name ?? user.email}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total === 0
-              ? "Your vault is empty — preserve your first accomplishment today."
+              ? "Your vault is empty. Preserve your first accomplishment today."
               : `${total} credential${total === 1 ? "" : "s"} in your vault.`}
           </p>
         </div>
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
             <Archive className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
             <h2 className="mt-4 text-2xl font-bold">Your vault is empty</h2>
             <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Capture what you just accomplished — a project, certificate, or seminar — so your
+              Capture what you just accomplished, like a project, certificate, or seminar, so your
               future self doesn&apos;t have to reconstruct it.
             </p>
             <Button className="mt-6 w-full sm:w-auto" asChild>

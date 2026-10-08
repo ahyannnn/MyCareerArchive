@@ -32,7 +32,7 @@ export default function LoginPage() {
       const code = `${error.code ?? ""} ${error.message ?? ""}`;
       if (/verif/i.test(code)) {
         setNeedsVerification(true);
-        setError("Please verify your email first — check your inbox for the link.");
+        setError("Please verify your email first. Check your inbox for the link.");
         return;
       }
       setError(error.message ?? "Sign-in failed");
@@ -110,7 +110,7 @@ export default function LoginPage() {
             )}
             {needsVerification && (
               <Button type="button" variant="outline" className="w-full" onClick={resend}>
-                {resent ? "Verification email sent — check your inbox" : "Resend verification email"}
+                {resent ? "Verification email sent. Check your inbox" : "Resend verification email"}
               </Button>
             )}
             <Button type="submit" className="w-full" disabled={pending}>
