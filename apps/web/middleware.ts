@@ -21,5 +21,8 @@ export const config = {
     "/portfolio/:path*",
     "/jobs/:path*",
     "/interviews/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/activity/:path*",
   ],
 };

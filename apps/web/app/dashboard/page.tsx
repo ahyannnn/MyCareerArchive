@@ -6,6 +6,7 @@ import type { CareerProfile, CredentialList } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CredentialCard } from "@/components/credential-card";
+import { DashboardToast } from "@/components/dashboard-toast";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
@@ -31,6 +32,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <DashboardToast />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">

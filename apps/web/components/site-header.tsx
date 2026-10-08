@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/server-session";
 import { Button } from "@/components/ui/button";
-import { SignOutMenu } from "@/components/site-header-user";
+import { AccountMenu } from "@/components/site-header-user";
 
 // Shared app shell: brand + primary nav + session menu. Rendered from the
 // root layout so every page inherits it; auth pages show brand + entry
@@ -48,7 +48,7 @@ export async function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           {user ? (
-            <SignOutMenu email={user.email} />
+            <AccountMenu name={user.name} email={user.email} />
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
