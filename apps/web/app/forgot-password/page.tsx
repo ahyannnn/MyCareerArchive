@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { frontendUrl } from "@/lib/frontend-url";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-// Always answers neutrally: whether or not the email exists, the user sees
-// the same message, so addresses can't be probed through this form.
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
@@ -20,42 +23,39 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
-      <h1 className="text-3xl font-bold">Forgot password</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        Enter your account email and we&apos;ll send a reset link.
-      </p>
-
+    <AuthShell title="Forgot password" description="Enter your account email and we'll send a reset link.">
       {done ? (
-        <p className="mt-6 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-800">
-          If an account exists for <span className="font-semibold">{email}</span>, a reset link is
-          on its way (expires in 1 hour).
-        </p>
+        <div className="rounded-md border border-success/30 bg-success/10 p-3 text-sm">
+          <p>
+            If an account exists for <span className="font-semibold">{email}</span>, a reset link is
+            on its way (expires in 1 hour).
+          </p>
+        </div>
       ) : (
-        <form onSubmit={onSubmit} className="mt-6 space-y-3">
-          <input
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-4 py-2"
-          />
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50"
-          >
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full" loading={pending}>
             {pending ? "Sending…" : "Send reset link"}
-          </button>
+          </Button>
         </form>
       )}
 
-      <p className="mt-6 text-sm text-zinc-600">
-        <a href="/login" className="font-medium text-zinc-900 underline">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Remember your password?{" "}
+        <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
           Back to login
-        </a>
+        </Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }

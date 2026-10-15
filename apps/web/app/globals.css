@@ -4,6 +4,82 @@
 
 @layer base {
   :root {
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --animate-fade-in: fade-in 0.3s ease-out;
+    --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-fade-in-down: fade-in-down 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-scale-in: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-slide-in-right: slide-in-right 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    --animate-shimmer: shimmer 1.5s linear infinite;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-in-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+
+  @layer utilities {
+    .animate-fade-in {
+      animation: var(--animate-fade-in);
+    }
+    .animate-fade-in-up {
+      animation: var(--animate-fade-in-up);
+    }
+    .animate-fade-in-down {
+      animation: var(--animate-fade-in-down);
+    }
+    .animate-scale-in {
+      animation: var(--animate-scale-in);
+    }
+    .animate-slide-in-right {
+      animation: var(--animate-slide-in-right);
+    }
+    .animate-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      background-size: 200% 100%;
+      animation: var(--animate-shimmer);
+    }
+    .animation-delay-100 { animation-delay: 100ms; }
+    .animation-delay-200 { animation-delay: 200ms; }
+    .animation-delay-300 { animation-delay: 300ms; }
+    .animation-delay-400 { animation-delay: 400ms; }
+    .animation-delay-500 { animation-delay: 500ms; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  :root {
     --background: 38 40% 97%;
     --foreground: 196 40% 24%;
     --card: 0 0% 100%;
@@ -70,5 +146,34 @@
 
   ::selection {
     background: hsl(var(--brand) / 0.22);
+  }
+}
+
+@media print {
+  header,
+  nav,
+  .print:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #e5e5e5 !important;
+    break-inside: avoid;
+  }
+
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
   }
 }

@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function InterviewsPage() {
   const [skill, setSkill] = useState("");
@@ -47,14 +49,11 @@ export default function InterviewsPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Career</p>
-        <h1 className="mt-1 text-3xl font-bold">Interview preparation</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Likely questions about your recorded experiences, each paired with talking points citing
-          your evidence. Built from stored records. Nothing is invented.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Career"
+        title="Interview preparation"
+        description="Likely questions about your recorded experiences, each paired with talking points citing your evidence. Built from stored records. Nothing is invented."
+      />
 
       <Card className="mt-6 print:hidden">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end">
@@ -93,23 +92,15 @@ export default function InterviewsPage() {
 
       {!loading && questions && questions.length === 0 && (
         <Card className="mt-4">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <SearchX className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No experiences to prepare with</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              {skill ? (
-                <>No credentials mention that skill. Try a broader term or clear the filter.</>
-              ) : (
-                <>
-                  Add credentials to your{" "}
-                  <Link href="/credentials" className="underline underline-offset-4">
-                    vault
-                  </Link>{" "}
-                  and they will turn into questions here.
-                </>
-              )}
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={SearchX}
+            title="No experiences to prepare with"
+            description={
+              skill
+                ? "No credentials mention that skill. Try a broader term or clear the filter."
+                : "Add credentials to your vault and they will turn into questions here."
+            }
+          />
         </Card>
       )}
 

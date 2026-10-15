@@ -112,7 +112,7 @@ export default function RegisterPage() {
         <Button
           type="submit"
           className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
-          disabled={pending}
+          loading={pending}
         >
           {pending ? "Creating…" : "Register with email"}
         </Button>

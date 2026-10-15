@@ -15,11 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialCard } from "@/components/credential-card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
-const selectClass =
-  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
 
 export default function PortfolioPage() {
   const [search, setSearch] = useState("");
@@ -76,14 +78,11 @@ export default function PortfolioPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Career</p>
-        <h1 className="mt-1 text-3xl font-bold">Portfolio generator</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Turn any stored experiences, like projects, certificates, and awards, into polished,
-          copy-ready markdown cards built only from recorded information.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Career"
+        title="Portfolio generator"
+        description="Turn any stored experiences, like projects, certificates, and awards, into polished, copy-ready markdown cards built only from recorded information."
+      />
 
       <Card className="mt-6 print:hidden">
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -98,14 +97,14 @@ export default function PortfolioPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="type">Type</Label>
-            <select id="type" className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
+            <Select id="type" value={type} onChange={(e) => setType(e.target.value)}>
               <option value="">All types</option>
               {CREDENTIAL_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="skill">Skill</Label>
@@ -139,13 +138,11 @@ export default function PortfolioPage() {
 
       {!loading && result && result.entries.length === 0 && (
         <Card className="mt-6">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <SearchX className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No experiences match</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Try broadening your search or clearing the filters.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={SearchX}
+            title="No experiences match"
+            description="Try broadening your search or clearing the filters."
+          />
         </Card>
       )}
 

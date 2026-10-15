@@ -157,10 +157,17 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         aria-label="Upload evidence files"
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -171,7 +178,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
           setDragOver(false);
           uploadFiles(e.dataTransfer.files);
         }}
-        className={`block w-full rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+        className={`block w-full cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
           dragOver ? "border-primary bg-accent" : "border-input hover:bg-accent/50"
         }`}
       >
@@ -180,7 +187,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
         <p className="mt-1 text-xs text-muted-foreground">
           Images, PDFs, office docs, text, archives. Size limits apply.
         </p>
-      </button>
+      </div>
       <input
         ref={inputRef}
         type="file"

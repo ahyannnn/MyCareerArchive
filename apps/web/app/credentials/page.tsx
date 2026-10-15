@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialCard } from "@/components/credential-card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
@@ -21,8 +24,7 @@ const SORTS = [
   { value: "created-asc", label: "Added long ago" },
 ];
 
-const selectClass =
-  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
 
 interface Filters {
   search: string;
@@ -85,23 +87,19 @@ export default function VaultPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Vault</p>
-          <h1 className="mt-1 text-3xl font-bold">Credentials</h1>
-          {!loading && list && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {list.meta.total} result{list.meta.total === 1 ? "" : "s"}
-            </p>
-          )}
-        </div>
-        <Button asChild>
-          <Link href="/credentials/new">
-            <Plus />
-            New credential
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Vault"
+        title="Credentials"
+        description={!loading && list ? `${list.meta.total} result${list.meta.total === 1 ? "" : "s"}` : undefined}
+        actions={
+          <Button asChild>
+            <Link href="/credentials/new">
+              <Plus />
+              New credential
+            </Link>
+          </Button>
+        }
+      />
 
       <Card className="mt-6">
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -116,9 +114,8 @@ export default function VaultPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="type">Type</Label>
-            <select
+            <Select
               id="type"
-              className={selectClass}
               value={filters.type}
               onChange={(e) => set({ type: e.target.value })}
             >
@@ -128,7 +125,7 @@ export default function VaultPage() {
                   {t}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="year">Year</Label>
@@ -142,9 +139,8 @@ export default function VaultPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="sort">Sort</Label>
-            <select
+            <Select
               id="sort"
-              className={selectClass}
               value={filters.sort}
               onChange={(e) => set({ sort: e.target.value })}
             >
@@ -153,13 +149,12 @@ export default function VaultPage() {
                   {s.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="org">Organization</Label>
-            <select
+            <Select
               id="org"
-              className={selectClass}
               value={filters.organizationId}
               onChange={(e) => set({ organizationId: e.target.value })}
             >
@@ -169,7 +164,7 @@ export default function VaultPage() {
                   {o.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="skill">Skill</Label>
@@ -249,32 +244,32 @@ export default function VaultPage() {
         </>
       ) : (
         <Card className="mt-4">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <SearchX className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No results found</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Try adjusting your search or filters to find what you&apos;re looking for.
-            </p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setFilters(EMPTY_FILTERS);
-                    setPage(1);
-                  }}
-                >
-                  Clear filters
+          <EmptyState
+            icon={SearchX}
+            title="No results found"
+            description="Try adjusting your search or filters to find what you're looking for."
+            action={
+              <>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFilters(EMPTY_FILTERS);
+                      setPage(1);
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href="/credentials/new">
+                    <Plus />
+                    New credential
+                  </Link>
                 </Button>
-              )}
-              <Button asChild>
-                <Link href="/credentials/new">
-                  <Plus />
-                  New credential
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
+              </>
+            }
+          />
         </Card>
       )}
     </main>

@@ -104,7 +104,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
-          disabled={pending}
+          loading={pending}
         >
           {pending ? "Logging in…" : "Log in with email"}
         </Button>

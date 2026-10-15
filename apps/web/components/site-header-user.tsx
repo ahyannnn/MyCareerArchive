@@ -12,17 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-export function initialsFor(name?: string | null, email?: string): string {
-  const source = (name ?? "").trim() || (email ?? "").trim();
-  if (!source) return "?";
-  const parts = source.split(/\s+/);
-  if (parts.length === 1) {
-    const local = parts[0].split("@")[0];
-    return (local.slice(0, 2) || "?").toUpperCase();
-  }
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+import { initialsFor } from "@/lib/utils";
 
 export function AccountMenu({ name, email }: { name?: string | null; email: string }) {
   const router = useRouter();

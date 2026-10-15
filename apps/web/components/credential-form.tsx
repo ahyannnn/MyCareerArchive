@@ -18,12 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const selectClass =
-  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
-
-const textareaClass =
-  "flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface CredentialFormValue {
   title: string;
@@ -236,9 +232,8 @@ export function CredentialForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
-              <select
+              <Select
                 id="type"
-                className={selectClass}
                 value={value.type}
                 onChange={(e) => patch({ type: e.target.value as CredentialType })}
               >
@@ -247,7 +242,7 @@ export function CredentialForm({
                     {t}
                   </option>
                 ))}
-              </select>
+                </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
@@ -261,9 +256,8 @@ export function CredentialForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <textarea
+            <Textarea
               id="description"
-              className={textareaClass}
               rows={4}
               maxLength={10000}
               placeholder="What happened, what you built, what you learned…"
@@ -303,9 +297,8 @@ export function CredentialForm({
             <Label htmlFor="org">Organization</Label>
             {!newOrgMode ? (
               <div className="flex gap-2">
-                <select
+                <Select
                   id="org"
-                  className={selectClass}
                   value={value.organizationId ?? ""}
                   onChange={(e) => patch({ organizationId: e.target.value || null })}
                 >
@@ -315,7 +308,7 @@ export function CredentialForm({
                       {o.name}
                     </option>
                   ))}
-                </select>
+              </Select>
                 <Button type="button" variant="outline" size="sm" onClick={() => setNewOrgMode(true)}>
                   <Plus />
                   New

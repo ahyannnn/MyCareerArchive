@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
 const WORK_TYPES: { value: WorkType | ""; label: string }[] = [
@@ -94,14 +96,11 @@ export default function JobsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Career</p>
-        <h1 className="mt-1 text-3xl font-bold">Career search</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Which roles you qualify for, based on the skills recorded in your vault. Local covers the
-          Philippines (onsite, remote, and hybrid). International covers worldwide remote roles.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Career"
+        title="Career search"
+        description="Which roles you qualify for, based on the skills recorded in your vault. Local covers the Philippines (onsite, remote, and hybrid). International covers worldwide remote roles."
+      />
 
       <Card className="mt-6">
         <CardHeader>
@@ -206,7 +205,7 @@ export default function JobsPage() {
                 }}
               />
             </div>
-            <Button onClick={() => search()} disabled={searching}>
+            <Button onClick={() => search()} loading={searching}>
               <Briefcase />
               {searching ? "Searching…" : "Search jobs"}
             </Button>
@@ -250,13 +249,11 @@ export default function JobsPage() {
 
       {!searching && result && result.jobs.length === 0 && (
         <Card className="mt-4">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <SearchX className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No matching postings</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Try a broader role keyword or clear the work type filter.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={SearchX}
+            title="No matching postings"
+            description="Try a broader role keyword or clear the work type filter."
+          />
         </Card>
       )}
 

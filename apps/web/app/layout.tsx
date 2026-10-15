@@ -34,11 +34,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground">
-        <Suspense fallback={<SiteHeaderSkeleton />}>
-          <SiteHeader />
-        </Suspense>
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster position="bottom-right" />
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus-top-0 focus:left-0 z-20">
+        Skip to main content
+      </a>
+      <Suspense fallback={<SiteHeaderSkeleton />}>
+        <SiteHeader />
+      </Suspense>
+      <QueryProvider>{children}</QueryProvider>
+      <Toaster position="bottom-right" />
       </body>
     </html>
   );

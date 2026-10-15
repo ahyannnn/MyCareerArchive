@@ -3,10 +3,8 @@ import { Logo } from "@/components/logo";
 import { getSessionUser } from "@/lib/server-session";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/site-header-user";
+import { MobileNav } from "@/components/mobile-nav";
 
-// Shared app shell: brand + primary nav + session menu. Rendered from the
-// root layout so every page inherits it; auth pages show brand + entry
-// links, signed-in pages show vault nav + the account menu.
 export async function SiteHeader() {
   const user = await getSessionUser();
 
@@ -17,38 +15,42 @@ export async function SiteHeader() {
           <Logo />
         </Link>
 
-        {user && (
-          <nav className="flex items-center gap-1 text-sm">
+{user && (
+          <nav className="hidden items-center gap-1 text-sm md:flex" aria-label="Primary">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/dashboard" aria-current={(typeof window !== "undefined" && window.location.pathname === "/dashboard") ? "page" : undefined}>
+                Dashboard
+              </Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/credentials">Vault</Link>
+              <Link href="/credentials" aria-current={(typeof window !== "undefined" && window.location.pathname.startsWith("/credentials")) ? "page" : undefined}>
+                Vault
+              </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-              <Link href="/timeline">Timeline</Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/timeline" aria-current={(typeof window !== "undefined" && window.location.pathname === "/timeline") ? "page" : undefined}>
+                Timeline
+              </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-              <Link href="/career">Career</Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/career" aria-current={(typeof window !== "undefined" && window.location.pathname === "/career") ? "page" : undefined}>
+                Career
+              </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-              <Link href="/jobs">Jobs</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
-              <Link href="/interviews">Interviews</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
-              <Link href="/resume">Resume</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
-              <Link href="/portfolio">Portfolio</Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/jobs" aria-current={(typeof window !== "undefined" && window.location.pathname === "/jobs") ? "page" : undefined}>
+                Jobs
+              </Link>
             </Button>
           </nav>
         )}
 
         <div className="ml-auto flex items-center gap-2">
           {user ? (
-            <AccountMenu name={user.name} email={user.email} />
+            <>
+              <AccountMenu name={user.name} email={user.email} />
+              <MobileNav />
+            </>
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>

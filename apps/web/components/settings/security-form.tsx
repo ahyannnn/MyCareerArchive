@@ -81,7 +81,7 @@ export function SecurityForm() {
           {error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" loading={pending}>
         {pending ? "Changing…" : "Change password"}
       </Button>
       <p className="text-xs text-muted-foreground">

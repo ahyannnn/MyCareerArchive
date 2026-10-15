@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialTypeBadge } from "@/components/credential-card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
 export default function ResumePage() {
@@ -94,15 +96,11 @@ export default function ResumePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Career</p>
-        <h1 className="mt-1 text-3xl font-bold">Resume builder</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Describe a target role and the builder ranks your stored experiences by keyword overlap, then
-          assembles markdown using only recorded information. Nothing is invented; AI phrasing arrives in
-          Phase 9.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Career"
+        title="Resume builder"
+        description="Describe a target role and the builder ranks your stored experiences by keyword overlap, then assembles markdown using only recorded information. Nothing is invented; AI phrasing arrives in Phase 9."
+      />
 
       <Card className="mt-6 print:hidden">
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
@@ -145,16 +143,16 @@ export default function ResumePage() {
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row">
-            <Button onClick={() => build(false)} disabled={loading}>
+            <Button onClick={() => build(false)} loading={loading}>
               {loading ? "Building…" : "Find matching experiences"}
             </Button>
             {result && result.matched.length > 0 && (
-              <Button variant="outline" onClick={() => build(true)} disabled={loading || selected.length === 0}>
+              <Button variant="outline" onClick={() => build(true)} loading={loading || selected.length === 0}>
                 Regenerate from {selected.length} selected
               </Button>
             )}
             {result && selected.length > 0 && (
-              <Button variant="outline" onClick={generateBullets} disabled={bulletsBusy}>
+              <Button variant="outline" onClick={generateBullets} loading={bulletsBusy}>
                 <ListChecks />
                 {bulletsBusy ? "Generating…" : `Bullets for ${selected.length} selected`}
               </Button>
@@ -178,13 +176,11 @@ export default function ResumePage() {
 
       {!loading && result && result.matched.length === 0 && (
         <Card className="mt-6">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <SearchX className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No matching experiences</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Try a broader role keyword, or clear the skill/tag/type filters.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={SearchX}
+            title="No matching experiences"
+            description="Try a broader role keyword, or clear the skill/tag/type filters."
+          />
         </Card>
       )}
 

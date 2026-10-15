@@ -4,6 +4,8 @@ import { Activity, FilePlus2, FileStack, Pencil } from "lucide-react";
 import { apiFetch, getSessionUser } from "@/lib/server-session";
 import type { CredentialList, EvidenceItem } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface FeedEvent {
   key: string;
@@ -86,13 +88,11 @@ export default async function ActivityPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-        My Activity
-      </p>
-      <h1 className="mt-1 font-display text-3xl tracking-tight">Recent activity</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        New and updated credentials plus freshly attached evidence.
-      </p>
+      <PageHeader
+        eyebrow="My Activity"
+        title="Recent activity"
+        description="New and updated credentials plus freshly attached evidence."
+      />
 
       {feed.length > 0 ? (
         <Card className="mt-6">
@@ -129,13 +129,11 @@ export default async function ActivityPage() {
         </Card>
       ) : (
         <Card className="mt-6">
-          <CardContent className="px-6 py-12 text-center">
-            <Activity className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <p className="mt-4 text-lg font-semibold">No activity yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Save your first credential and it will show up here.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={Activity}
+            title="No activity yet"
+            description="Save your first credential and it will show up here."
+          />
         </Card>
       )}
     </main>

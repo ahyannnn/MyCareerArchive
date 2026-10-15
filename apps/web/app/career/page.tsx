@@ -9,8 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialTypeBadge } from "@/components/credential-card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const SKILL_SORTS = [
   { value: "count", label: "Most used" },
@@ -18,8 +21,7 @@ const SKILL_SORTS = [
   { value: "name", label: "Name A to Z" },
 ];
 
-const selectClass =
-  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
 
 function yearOf(iso: string | null): string {
   if (!iso) return "Unknown";
@@ -63,26 +65,24 @@ export default function CareerPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Career</p>
-          <h1 className="mt-1 text-3xl font-bold">Profile</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Computed from your stored credentials. Evidence, not estimates.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/timeline">Timeline</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/credentials/new">
-              <Plus />
-              Quick Add
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Career"
+        title="Profile"
+        description="Computed from your stored credentials. Evidence, not estimates."
+        actions={
+          <>
+            <Button variant="outline" asChild>
+              <Link href="/timeline">Timeline</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/credentials/new">
+                <Plus />
+                Quick Add
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {error && (
         <p role="alert" className="mt-4 text-sm text-destructive">
@@ -98,19 +98,19 @@ export default function CareerPage() {
         </div>
       ) : profile.totals.credentials === 0 ? (
         <Card className="mt-6">
-          <CardContent className="mx-auto max-w-md px-6 py-12 text-center">
-            <Archive className="mx-auto size-12 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="mt-4 text-2xl font-bold">No career data yet</h2>
-            <p className="mt-2 text-balance text-sm text-muted-foreground">
-              Your profile, timeline, and skill history build themselves as you preserve experiences.
-            </p>
-            <Button className="mt-6 w-full sm:w-auto" asChild>
-              <Link href="/credentials/new">
-                <Plus />
-                Create your first credential
-              </Link>
-            </Button>
-          </CardContent>
+          <EmptyState
+            icon={Archive}
+            title="No career data yet"
+            description="Your profile, timeline, and skill history build themselves as you preserve experiences."
+            action={
+              <Button asChild>
+                <Link href="/credentials/new">
+                  <Plus />
+                  Create your first credential
+                </Link>
+              </Button>
+            }
+          />
         </Card>
       ) : (
         <>
@@ -183,13 +183,13 @@ export default function CareerPage() {
             <Label htmlFor="skill-sort" className="sr-only">
               Sort skills
             </Label>
-            <select id="skill-sort" className={selectClass} value={sort} onChange={(e) => setSort(e.target.value)}>
+            <Select id="skill-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
               {SKILL_SORTS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="w-52 space-y-1.5">
             <Label htmlFor="skill-search" className="sr-only">

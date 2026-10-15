@@ -51,7 +51,7 @@ export function ProfileForm({ initialName }: { initialName: string }) {
           {error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" loading={pending}>
         {pending ? "Saving…" : "Save changes"}
       </Button>
     </form>

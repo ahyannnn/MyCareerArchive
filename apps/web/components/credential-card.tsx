@@ -5,27 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const TYPE_BADGE: Record<CredentialType, string> = {
-  PROJECT: "bg-blue-600",
-  CERTIFICATE: "bg-emerald-600",
-  SEMINAR: "bg-violet-600",
-  TRAINING: "bg-cyan-600",
+const TYPE_DOT: Record<CredentialType, string> = {
+  PROJECT: "bg-blue-500",
+  CERTIFICATE: "bg-emerald-500",
+  SEMINAR: "bg-violet-500",
+  TRAINING: "bg-cyan-500",
   AWARD: "bg-amber-500",
-  COMPETITION: "bg-orange-600",
-  INTERNSHIP: "bg-teal-600",
-  ORGANIZATION: "bg-slate-600",
-  VOLUNTEER: "bg-pink-600",
+  COMPETITION: "bg-orange-500",
+  INTERNSHIP: "bg-teal-500",
+  ORGANIZATION: "bg-slate-500",
+  VOLUNTEER: "bg-pink-500",
   OTHER: "bg-zinc-500",
 };
 
 export function CredentialTypeBadge({ type }: { type: CredentialType }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold text-white",
-        TYPE_BADGE[type] ?? TYPE_BADGE.OTHER,
-      )}
-    >
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      <span className={cn("size-1.5 rounded-full", TYPE_DOT[type] ?? TYPE_DOT.OTHER)} />
       {type}
     </span>
   );
@@ -35,7 +31,7 @@ export function CredentialCard({ credential }: { credential: CredentialSummary }
   const year = credential.date ? new Date(credential.date).getFullYear() : null;
   return (
     <Link href={`/credentials/${credential.id}`} className="block">
-      <Card className="transition-colors hover:border-primary/40 hover:shadow-md">
+      <Card className="transition-all hover:shadow-md hover:-translate-y-0.5">
         <CardContent className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold leading-snug">{credential.title}</p>

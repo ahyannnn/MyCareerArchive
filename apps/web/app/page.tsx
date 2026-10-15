@@ -88,10 +88,10 @@ export default async function Home() {
               <Archive className="size-3.5" />
               Personal career evidence system
             </Badge>
-            <h1 className="mt-5 font-display text-4xl leading-[1.08] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 font-display text-4xl leading-[1.08] tracking-tight text-balance sm:text-5xl lg:text-6xl fade-in-up">
               Never lose track of what you accomplished.
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+            <p className="mt-5 max-w-xl text-lg text-muted-foreground fade-in-up" style={{ animationDelay: '100ms' }}>
               Capture projects, certificates, and proof now, so your future self
               does not have to reconstruct them at resume time.
             </p>
@@ -99,7 +99,8 @@ export default async function Home() {
               <Button
                 size="lg"
                 asChild
-                className="bg-brand text-brand-foreground hover:bg-brand/90"
+                className="bg-brand text-brand-foreground hover:bg-brand/90 fade-in-up"
+                style={{ animationDelay: '200ms' }}
               >
                 <Link href="/register">
                   Start archiving free
@@ -110,25 +111,26 @@ export default async function Home() {
                 <Link href="#how">See how it works</Link>
               </Button>
             </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <li className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="size-4 text-primary" />
-                Private by default
-              </li>
-              <li className="inline-flex items-center gap-1.5">
-                <FileStack className="size-4 text-primary" />
-                Files stay attached as proof
-              </li>
-              <li className="inline-flex items-center gap-1.5">
-                <Sparkles className="size-4 text-primary" />
-                Resume ready outputs
-              </li>
-            </ul>
-          </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground fade-in-up"
+              style={{ animationDelay: '300ms' }}>
+                <li className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="size-4 text-primary" />
+                  Private by default
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <FileStack className="size-4 text-primary" />
+                  Files stay attached as proof
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <Sparkles className="size-4 text-primary" />
+                  Resume ready outputs
+                </li>
+              </ul>
+            </div>
 
           {/* Product preview */}
-          <div className="relative">
-            <Card>
+          <div className="grid gap-4">
+            <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
               <CardContent className="space-y-3 p-5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold leading-snug">
@@ -163,30 +165,32 @@ export default async function Home() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="absolute -bottom-8 -left-2 w-64 shadow-sm sm:-left-6">
-              <CardContent className="space-y-2 p-4 text-sm">
-                <p className="flex items-center gap-2 font-semibold">
-                  <FileStack className="size-4 text-brand" />
-                  3 evidence files
-                </p>
-                <p className="text-muted-foreground">
-                  Certificate PDF, event photo, study notes
-                </p>
-                <p className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                  <Check className="size-3.5" />
-                  Verified proof attached
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="absolute -top-7 -right-2 hidden w-56 shadow-sm sm:block lg:-right-4">
-              <CardContent className="space-y-1.5 p-4 text-sm">
-                <p className="font-semibold">Backend Developer match</p>
-                <p className="text-muted-foreground">
-                  3 overlapping skills, 1 certificate plus 3 more
-                </p>
-                <Badge variant="success">Strong fit</Badge>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
+                <CardContent className="space-y-2 p-4 text-sm">
+                  <p className="flex items-center gap-2 font-semibold">
+                    <FileStack className="size-4 text-brand" />
+                    3 evidence files
+                  </p>
+                  <p className="text-muted-foreground">
+                    Certificate PDF, event photo, study notes
+                  </p>
+                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                    <Check className="size-3.5" />
+                    Verified proof attached
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
+                <CardContent className="space-y-1.5 p-4 text-sm">
+                  <p className="font-semibold">Backend Developer match</p>
+                  <p className="text-muted-foreground">
+                    3 overlapping skills, 1 certificate plus 3 more
+                  </p>
+                  <Badge variant="success">Strong fit</Badge>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -220,7 +224,7 @@ export default async function Home() {
           </h2>
           <div className="mt-8 grid gap-3 md:grid-cols-3">
             {STEPS.map((s) => (
-              <Card key={s.step}>
+              <Card key={s.step} className="group hover:shadow-xl group-hover:border-primary/20 transition-all">
                 <CardContent className="p-6">
                   <span className="flex size-10 items-center justify-center rounded-lg bg-brand/15 text-brand">
                     <s.icon className="size-5" />
@@ -265,27 +269,27 @@ export default async function Home() {
             Built from real records, not invented.
           </h2>
           <div className="mt-8 grid gap-3 lg:grid-cols-3">
-            <Card>
+            <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
               <CardContent className="space-y-2 p-5 text-sm">
-                <Badge>Resume bullet</Badge>
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Resume bullet</p>
                 <p className="text-muted-foreground">
                   Shipped a REST API with auth and Postgres. Backed by
                   certificate, notes, and event photo.
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
               <CardContent className="space-y-2 p-5 text-sm">
-                <Badge>Portfolio block</Badge>
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Portfolio block</p>
                 <p className="text-muted-foreground">
                   Polished project story generated from your description, skills,
                   and evidence links.
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="group hover:shadow-md group-hover:-translate-y-0.5">
               <CardContent className="space-y-2 p-5 text-sm">
-                <Badge variant="success">Job overlap: 3 skills</Badge>
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Job overlap</p>
                 <p className="text-muted-foreground">
                   Node.js, REST API, and PostgreSQL matched against the posting.
                 </p>
