@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/server-session";
 import { initialsFor } from "@/lib/utils";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { BackButton } from "@/components/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function ProfilePage() {
@@ -12,7 +13,8 @@ export default async function ProfilePage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+      <BackButton fallbackHref="/dashboard" />
+      <p className="mt-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Profile
       </p>
       <h1 className="mt-1 font-display text-3xl tracking-tight">Your profile</h1>

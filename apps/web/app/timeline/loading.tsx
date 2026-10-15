@@ -19,7 +19,7 @@ export default function TimelineLoading() {
             <Skeleton className="h-7 w-24" />
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, j) => (
-                <Skeleton key={j} className="h-36" />
+                <Skeleton key={j} className="h-96" />
               ))}
             </div>
           </div>

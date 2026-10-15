@@ -122,7 +122,11 @@ credentialsRouter.get(
           ? { createdAt: "desc" }
           : q.sort === "created-asc"
             ? { createdAt: "asc" }
-            : { date: { sort: "desc", nulls: "last" } };
+            : q.sort === "updated-desc"
+              ? { updatedAt: "desc" }
+              : q.sort === "updated-asc"
+                ? { updatedAt: "asc" }
+                : { date: { sort: "desc", nulls: "last" } };
 
     const [total, rows] = await prisma.$transaction([
       prisma.credential.count({ where }),

@@ -81,7 +81,8 @@ GET /api/health/db
 
 ```http
 POST   /api/credentials
-GET    /api/credentials?search=&type=&skill=&tag=&organizationId=&year=&sort=date-desc&page=&pageSize=
+GET    /api/credentials?search=&type=&skill=&tag=&organizationId=&year=&sort=&page=&pageSize=
+(sort: date-desc|date-asc|created-desc|created-asc|updated-desc|updated-asc)
 GET    /api/credentials/:id
 PATCH  /api/credentials/:id
 DELETE /api/credentials/:id
@@ -92,6 +93,9 @@ AWARD|COMPETITION|INTERNSHIP|ORGANIZATION|VOLUNTEER|OTHER, default OTHER),
 `organizationId?|null`, `date?|null` (ISO-8601), `location?`, `url?|null`,
 `skillIds?[]`, `tagIds?[]`. On PATCH, `skillIds`/`tagIds` replace links when
 present and are untouched when omitted.
+Credential responses include `preview: { evidenceId, mimeType } | null` — the
+newest `UPLOADED` image evidence for card cover photos (null when none).
+Download bytes via `GET /api/evidence/:id/url` (presigned, 1 h).
 
 ## Skills
 

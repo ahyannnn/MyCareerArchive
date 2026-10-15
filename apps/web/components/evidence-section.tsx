@@ -56,6 +56,68 @@ interface PendingUpload {
   error?: string;
 }
 
+// Presigned preview URLs (1h TTL server-side); refetch past 50 min instead
+// of rendering an expired image.
+const previewUrlCache = new Map<string, { url: string; at: number }>();
+const PREVIEW_CACHE_MS = 50 * 60_000;
+
+function isPreviewable(item: EvidenceItem): boolean {
+  return item.status === "UPLOADED" && (item.mimeType?.startsWith("image/") ?? false);
+}
+
+function PreviewThumb({
+  item,
+  onOpen,
+}: {
+  item: EvidenceItem;
+  onOpen: (item: EvidenceItem, url: string) => void;
+}) {
+  const cached = previewUrlCache.get(item.id);
+  const fresh = cached && Date.now() - cached.at < PREVIEW_CACHE_MS ? cached.url : null;
+  const [url, setUrl] = useState<string | null>(fresh);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (fresh) return;
+    let cancelled = false;
+    evidenceApi
+      .downloadUrl(item.id)
+      .then(({ url }) => {
+        previewUrlCache.set(item.id, { url, at: Date.now() });
+        if (!cancelled) setUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, fresh]);
+
+  if (failed || !url) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(item, url)}
+      aria-label={`Preview ${item.fileName}`}
+      className="group relative block aspect-video w-full overflow-hidden rounded-lg border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={item.fileName}
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+      />
+      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/60 to-transparent px-2 pb-1.5 pt-6 text-left text-xs font-medium text-white">
+        {item.fileName}
+      </span>
+    </button>
+  );
+}
+
 export function EvidenceSection({ credentialId }: { credentialId: string }) {
   const invalidateVault = useInvalidateVault();
   const [items, setItems] = useState<EvidenceItem[]>([]);
@@ -63,6 +125,7 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [deleting, setDeleting] = useState<EvidenceItem | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [viewer, setViewer] = useState<{ item: EvidenceItem; url: string } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -225,6 +288,18 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
         </Card>
       ))}
 
+      {!loading && items.some(isPreviewable) && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {items.filter(isPreviewable).map((item) => (
+            <PreviewThumb
+              key={item.id}
+              item={item}
+              onOpen={(opened, url) => setViewer({ item: opened, url })}
+            />
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading evidence…</p>
       ) : items.length === 0 && pending.length === 0 ? (
@@ -269,6 +344,46 @@ export function EvidenceSection({ credentialId }: { credentialId: string }) {
           })}
         </ul>
       )}
+
+      <Dialog open={viewer !== null} onOpenChange={(open) => !open && setViewer(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="truncate">{viewer?.item.fileName}</DialogTitle>
+            <DialogDescription>
+              {viewer && (
+                <>
+                  {formatBytes(viewer.item.fileSize)}
+                  {viewer.item.mimeType ? ` · ${viewer.item.mimeType}` : ""}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {viewer && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={viewer.url}
+              alt={viewer.item.fileName}
+              className="max-h-[70vh] w-full rounded-md border object-contain"
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewer(null)}>
+              Close
+            </Button>
+            {viewer && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  window.open(viewer.url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <Download />
+                Open full size
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
         <DialogContent>

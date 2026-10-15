@@ -15,7 +15,7 @@ export default function CredentialsLoading() {
       <Skeleton className="mt-6 h-44" />
       <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-36" />
+          <Skeleton key={i} className="h-96" />
         ))}
       </div>
     </main>

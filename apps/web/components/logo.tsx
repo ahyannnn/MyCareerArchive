@@ -38,7 +38,7 @@ export function Logo({
       <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
         <LogoMark className={markClassName} />
       </span>
-      {showWordmark && <span className="hidden sm:inline">MyCareerArchive</span>}
+      {showWordmark && <span className="whitespace-nowrap">MyCareerArchive</span>}
     </span>
   );
 }

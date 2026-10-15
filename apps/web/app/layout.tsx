@@ -4,6 +4,7 @@ import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteHeaderSkeleton } from "@/components/site-header-skeleton";
+import { SideNav } from "@/components/side-nav";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -40,7 +41,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <Suspense fallback={<SiteHeaderSkeleton />}>
         <SiteHeader />
       </Suspense>
-      <QueryProvider>{children}</QueryProvider>
+      <div className="flex items-start">
+        <QueryProvider>
+          <SideNav />
+          <div id="main-content" className="min-w-0 flex-1">
+            {children}
+          </div>
+        </QueryProvider>
+      </div>
       <Toaster position="bottom-right" />
       </body>
     </html>

@@ -8,6 +8,15 @@ export const credentialInclude = Prisma.validator<Prisma.CredentialInclude>()({
   skills: { include: { skill: true } },
   tags: { include: { tag: true } },
   _count: { select: { evidence: true } },
+  // Candidate cover photo for cards: the newest uploaded image (or null).
+  // Filtered to image/* and take 1 so list endpoints don't drag unrelated
+  // evidence rows on every navigation.
+  evidence: {
+    where: { status: "UPLOADED", mimeType: { startsWith: "image/" } },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { id: true, mimeType: true },
+  },
 });
 
 export type CredentialWithRelations = Prisma.CredentialGetPayload<{
@@ -17,6 +26,7 @@ export type CredentialWithRelations = Prisma.CredentialGetPayload<{
 // Map Prisma rows to API DTOs so database internals (join rows, FK ids)
 // never leak to clients. Keep in sync with docs/API.md.
 export function serializeCredential(c: CredentialWithRelations) {
+  const cover = (c.evidence ?? [])[0] ?? null;
   return {
     id: c.id,
     title: c.title,
@@ -31,6 +41,7 @@ export function serializeCredential(c: CredentialWithRelations) {
     skills: c.skills.map((s) => ({ id: s.skill.id, name: s.skill.name })),
     tags: c.tags.map((t) => ({ id: t.tag.id, name: t.tag.name })),
     evidenceCount: c._count.evidence,
+    preview: cover ? { evidenceId: cover.id, mimeType: cover.mimeType as string } : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   };

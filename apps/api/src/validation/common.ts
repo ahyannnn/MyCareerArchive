@@ -26,7 +26,9 @@ export const credentialQuery = z.object({
   tag: z.string().trim().min(1).max(100).optional(),
   organizationId: z.string().cuid().optional(),
   year: z.coerce.number().int().min(1900).max(2100).optional(),
-  sort: z.enum(["date-desc", "date-asc", "created-desc", "created-asc"]).default("date-desc"),
+  sort: z
+    .enum(["date-desc", "date-asc", "created-desc", "created-asc", "updated-desc", "updated-asc"])
+    .default("date-desc"),
 });
 
 export type CredentialQuery = z.infer<typeof credentialQuery>;

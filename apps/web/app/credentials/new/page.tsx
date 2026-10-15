@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialForm, EMPTY_FORM, type CredentialFormValue } from "@/components/credential-form";
+import { BackButton } from "@/components/back-button";
 import { useInvalidateVault } from "@/lib/queries";
 
 function toCreatePayload(v: CredentialFormValue) {
@@ -69,7 +70,8 @@ export default function NewCredentialPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+      <BackButton fallbackHref="/credentials" />
+      <p className="mt-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         <Link href="/credentials" className="hover:underline">
           Vault
         </Link>{" "}

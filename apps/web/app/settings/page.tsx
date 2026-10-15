@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/server-session";
 import { AppearanceToggle } from "@/components/settings/appearance-toggle";
+import { BackButton } from "@/components/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
@@ -9,7 +10,8 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+      <BackButton fallbackHref="/dashboard" />
+      <p className="mt-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         Settings
       </p>
       <h1 className="mt-1 font-display text-3xl tracking-tight">Preferences</h1>

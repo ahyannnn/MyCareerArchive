@@ -19,6 +19,7 @@ import {
   formValueFrom,
   type CredentialFormValue,
 } from "@/components/credential-form";
+import { BackButton } from "@/components/back-button";
 import { useInvalidateVault } from "@/lib/queries";
 
 function toUpdatePayload(v: CredentialFormValue) {
@@ -91,7 +92,8 @@ export default function EditCredentialPage({ params }: { params: { id: string } 
   if (notFound) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold">Credential not found</h1>
+        <BackButton fallbackHref="/credentials" />
+        <h1 className="mt-4 text-2xl font-bold">Credential not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been deleted, or you don&apos;t have access to it.
         </p>
@@ -104,7 +106,8 @@ export default function EditCredentialPage({ params }: { params: { id: string } 
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+      <BackButton fallbackHref={`/credentials/${id}`} />
+      <p className="mt-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
         <Link href="/credentials" className="hover:underline">
           Vault
         </Link>{" "}

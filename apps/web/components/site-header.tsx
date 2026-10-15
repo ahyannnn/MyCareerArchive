@@ -10,42 +10,16 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-semibold">
+      <div className="flex h-14 w-full items-center gap-4 px-4 sm:px-6">
+        <Link
+          href={user ? "/dashboard" : "/"}
+          aria-label="MyCareerArchive home"
+          className="flex shrink-0 items-center gap-2 rounded-md font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <Logo />
         </Link>
 
-{user && (
-          <nav className="hidden items-center gap-1 text-sm md:flex" aria-label="Primary">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard" aria-current={(typeof window !== "undefined" && window.location.pathname === "/dashboard") ? "page" : undefined}>
-                Dashboard
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/credentials" aria-current={(typeof window !== "undefined" && window.location.pathname.startsWith("/credentials")) ? "page" : undefined}>
-                Vault
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/timeline" aria-current={(typeof window !== "undefined" && window.location.pathname === "/timeline") ? "page" : undefined}>
-                Timeline
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/career" aria-current={(typeof window !== "undefined" && window.location.pathname === "/career") ? "page" : undefined}>
-                Career
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/jobs" aria-current={(typeof window !== "undefined" && window.location.pathname === "/jobs") ? "page" : undefined}>
-                Jobs
-              </Link>
-            </Button>
-          </nav>
-        )}
-
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {user ? (
             <>
               <AccountMenu name={user.name} email={user.email} />

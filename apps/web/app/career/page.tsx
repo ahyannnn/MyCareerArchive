@@ -46,10 +46,12 @@ export default function CareerPage() {
   // Independent queries: re-sorting skills never refires the profile
   // aggregate, and each caches under its own key.
   const { data: profile, isLoading: profileLoading, error: profileError } = useCareerProfile();
-  const { data: skills, isLoading: skillsLoading, error: skillsError } = useSkillHistory(
-    sort,
-    debouncedSearch || undefined,
-  );
+  const {
+    data: skills,
+    isLoading: skillsLoading,
+    error: skillsError,
+    refetch: refetchSkills,
+  } = useSkillHistory(sort, debouncedSearch || undefined);
   const loading = profileLoading && !profile;
   const skillsInitialLoading = skillsLoading && !skills;
   const error = profileError ?? skillsError;
@@ -205,13 +207,24 @@ export default function CareerPage() {
         </div>
       </div>
 
-      {skillsInitialLoading || !skills ? (
+      {skillsInitialLoading ? (
         <div className="mt-4 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-16" />
           ))}
         </div>
-      ) : skills.length > 0 ? (
+      ) : skillsError ? (
+        <Card className="mt-4">
+          <CardContent className="space-y-3 px-6 py-10 text-center">
+            <p role="alert" className="text-sm text-destructive">
+              {skillsError.message ?? "Could not load skill history"}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetchSkills()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : skills && skills.length > 0 ? (
         <div className="mt-4 space-y-2">
           {skills.map((s) => (
             <Card key={s.id}>
@@ -243,11 +256,39 @@ export default function CareerPage() {
             </Card>
           ))}
         </div>
+      ) : search || debouncedSearch ? (
+        <Card className="mt-4">
+          <CardContent className="space-y-3 px-6 py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              No skills match &ldquo;{search || debouncedSearch}&rdquo;.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setDebouncedSearch("");
+              }}
+            >
+              Clear search
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="mt-4">
-          <CardContent className="px-6 py-10 text-center text-sm text-muted-foreground">
-            {search || debouncedSearch ? "No skills match your search." : "Skills you link to credentials will appear here."}
-          </CardContent>
+          <EmptyState
+            icon={Archive}
+            title="No skills yet"
+            description="Link skills when creating or editing a credential and they will appear here with usage counts."
+            action={
+              <Button asChild>
+                <Link href="/credentials/new">
+                  <Plus />
+                  Create your first credential
+                </Link>
+              </Button>
+            }
+          />
         </Card>
       )}
     </main>

@@ -51,6 +51,7 @@ export interface CredentialSummary {
   skills: { id: string; name: string }[];
   tags: { id: string; name: string }[];
   evidenceCount: number;
+  preview: { evidenceId: string; mimeType: string } | null;
   createdAt: string;
   updatedAt: string;
 }

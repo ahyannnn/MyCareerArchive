@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialTypeBadge } from "@/components/credential-card";
+import { BackButton } from "@/components/back-button";
 import { EvidenceSection } from "@/components/evidence-section";
 import { useInvalidateVault } from "@/lib/queries";
 
@@ -96,7 +97,8 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
   if (notFound) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold">Credential not found</h1>
+        <BackButton fallbackHref="/credentials" />
+        <h1 className="mt-4 text-2xl font-bold">Credential not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been deleted, or you don&apos;t have access to it.
         </p>
@@ -110,6 +112,7 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
   if (loading || !credential) {
     return (
       <main className="mx-auto max-w-3xl space-y-3 px-4 py-8 sm:px-6">
+        <BackButton fallbackHref="/credentials" />
         <Skeleton className="h-10 w-2/3" />
         <Skeleton className="h-40" />
         <Skeleton className="h-40" />
@@ -121,6 +124,7 @@ export default function CredentialDetailPage({ params }: { params: { id: string 
 
   return (
     <main className="mx-auto max-w-3xl space-y-4 px-4 py-8 sm:px-6">
+      <BackButton fallbackHref="/credentials" />
       <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
         <Link href="/credentials" className="hover:underline">
           Vault
