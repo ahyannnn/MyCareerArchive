@@ -40,8 +40,8 @@ free tier.)
    `GET /api/health`. First boot compiles slowly on free tier; give it minutes.
    Two build gotchas already handled in config: the build installs devDeps
    (`--include=dev`, because Render's production env would otherwise omit the
-   `@types/*` packages `tsc` needs), and Node is pinned to 20.x via root
-   `engines` (Render would otherwise pick the newest major).
+   `@types/*` packages `tsc` needs), and Node is pinned to 22.x via root
+   `engines` (Render would otherwise pick the newest major; Vercel dropped 20).
 5. Free-tier note: services sleep after inactivity (cold starts ~30-60s).
    The Step 8 uptime ping doubles as a keep-warm.
 
@@ -52,7 +52,8 @@ cookies and better-auth's built-in rate limiter (see `docs/SECURITY.md`).
 
 1. Import the repo. **Root Directory: repository root** (do not set
    `apps/web` — `vercel.json` already scopes the build/output).
-2. Node version: 20.x. Framework preset: Next.js.
+2. Node version: 22.x (pinned via root `engines`; Vercel dropped Node 20).
+   Framework preset: Next.js.
 3. Environment variables (Production):
    - `NEXT_PUBLIC_API_URL=https://<your-render-service>.onrender.com`
    - `NEXT_PUBLIC_SITE_URL=https://<your-vercel-app>.vercel.app`
