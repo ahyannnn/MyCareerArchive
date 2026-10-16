@@ -1,25 +1,31 @@
-import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
-import { passwordResetEmail, sendEmail, verificationEmail } from "./email.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseSender, passwordResetEmail, sendEmail, verificationEmail } from "./email.js";
 import { logger } from "./logger.js";
 
-vi.mock("resend", () => ({ Resend: vi.fn() }));
+const savedKey = process.env.BREVO_API_KEY;
+const savedFrom = process.env.EMAIL_FROM;
 
-async function resendMock() {
-  const { Resend } = await import("resend");
-  return Resend as unknown as Mock;
+function mockFetchOk() {
+  return vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({ ok: true, status: 201, text: async () => "" }) as Response),
+  );
 }
-
-const savedKey = process.env.RESEND_API_KEY;
 
 afterEach(() => {
   vi.restoreAllMocks();
-  if (savedKey === undefined) delete process.env.RESEND_API_KEY;
-  else process.env.RESEND_API_KEY = savedKey;
+  vi.unstubAllGlobals();
+  if (savedKey === undefined) delete process.env.BREVO_API_KEY;
+  else process.env.BREVO_API_KEY = savedKey;
+  if (savedFrom === undefined) delete process.env.EMAIL_FROM;
+  else process.env.EMAIL_FROM = savedFrom;
 });
 
 describe("sendEmail without a key", () => {
   it("logs a structured skip record instead of sending", async () => {
-    delete process.env.RESEND_API_KEY;
+    delete process.env.BREVO_API_KEY;
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
     const info = vi.spyOn(logger, "info").mockImplementation(() => {});
     await sendEmail({
       to: "user@example.com",
@@ -36,10 +42,12 @@ describe("sendEmail without a key", () => {
       subject: "Verify",
       url: "https://app/verify?t=1",
     });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("omits the url field when there is no auth link", async () => {
-    delete process.env.RESEND_API_KEY;
+    delete process.env.BREVO_API_KEY;
+    vi.stubGlobal("fetch", vi.fn());
     const info = vi.spyOn(logger, "info").mockImplementation(() => {});
     await sendEmail({ to: "a@b.c", subject: "s", html: "h", text: "t" });
     const [record] = info.mock.calls[0];
@@ -50,29 +58,60 @@ describe("sendEmail without a key", () => {
 describe("sendEmail with a key", () => {
   const payload = { to: "user@example.com", subject: "Hi", html: "<p>hi</p>", text: "hi" };
 
-  it("sends through Resend without logging", async () => {
-    process.env.RESEND_API_KEY = "test-key";
-    const send = vi.fn(async (..._args: unknown[]): Promise<{ error: { message: string } | null }> => ({ error: null }));
-    (await resendMock()).mockImplementation(() => ({ emails: { send } }));
+  it("sends through Brevo without logging", async () => {
+    process.env.BREVO_API_KEY = "test-key";
+    process.env.EMAIL_FROM = "MyCareerArchive <sender@example.com>";
+    const fetchMock = vi.fn(
+      async () => ({ ok: true, status: 201, text: async () => "" }) as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
     const info = vi.spyOn(logger, "info").mockImplementation(() => {});
     await sendEmail(payload);
-    expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.calls[0][0]).toMatchObject({ to: payload.to, subject: payload.subject });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.brevo.com/v3/smtp/email");
+    expect((init.headers as Record<string, string>)["api-key"]).toBe("test-key");
+    const body = JSON.parse(init.body as string);
+    expect(body).toMatchObject({
+      sender: { name: "MyCareerArchive", email: "sender@example.com" },
+      to: [{ email: payload.to }],
+      subject: payload.subject,
+      htmlContent: payload.html,
+      textContent: payload.text,
+    });
     expect(info).not.toHaveBeenCalled();
   });
 
-  it("logs email.failed without throwing when the provider errors", async () => {
-    process.env.RESEND_API_KEY = "test-key";
-    const send = vi.fn(
-      async (..._args: unknown[]): Promise<{ error: { message: string } | null }> => ({
-        error: { message: "rejected" },
-      }),
+  it("logs email.failed without throwing when Brevo rejects", async () => {
+    process.env.BREVO_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 400, text: async () => "bad sender" }) as Response),
     );
-    (await resendMock()).mockImplementation(() => ({ emails: { send } }));
+    const err = vi.spyOn(logger, "error").mockImplementation(() => {});
+    await expect(sendEmail(payload)).resolves.toBeUndefined();
+    const [record] = err.mock.calls[0];
+    expect(record).toMatchObject({ event: "email.failed", to: payload.to, status: 400 });
+  });
+
+  it("logs email.failed without throwing when fetch throws", async () => {
+    process.env.BREVO_API_KEY = "test-key";
+    mockFetchOk();
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("network down"));
     const err = vi.spyOn(logger, "error").mockImplementation(() => {});
     await expect(sendEmail(payload)).resolves.toBeUndefined();
     const [record] = err.mock.calls[0];
     expect(record).toMatchObject({ event: "email.failed", to: payload.to });
+  });
+});
+
+describe("parseSender", () => {
+  it("splits Name <addr> and passes bare addresses through", () => {
+    expect(parseSender("MyCareerArchive <sender@example.com>")).toEqual({
+      name: "MyCareerArchive",
+      email: "sender@example.com",
+    });
+    expect(parseSender("sender@example.com")).toEqual({ email: "sender@example.com" });
   });
 });
 

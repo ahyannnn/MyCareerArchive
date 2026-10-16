@@ -2,7 +2,8 @@
 // tests. Blank the key BEFORE any app module loads (dotenv never overrides
 // an existing var), forcing lib/email.ts into its console-log fallback.
 // Real delivery is covered by manual verification, not automated tests.
-process.env.RESEND_API_KEY = "";
+process.env.BREVO_API_KEY = "";
+delete process.env.RESEND_API_KEY;
 
 // Deterministic dummy storage credentials for the same reason: presigning
 // is pure cryptography (no network), and every S3 call is intercepted by

@@ -1,7 +1,7 @@
 # Deploy Runbook — Phase 10, Step 7
 
 Target: **Vercel** (web, `sin1`) + **Render** (API, Singapore) + **Neon**
-Postgres + **Supabase Storage** + **Resend**. All free-tier friendly.
+Postgres + **Supabase Storage** + **Brevo**. All free-tier friendly.
 Config as code: `render.yaml` (API), `vercel.json` (web, repo root —
 leave Vercel's Root Directory at the repository root).
 
@@ -12,7 +12,8 @@ leave Vercel's Root Directory at the repository root).
 - Supabase project → private Storage bucket + S3 access keys
   (endpoint, region, key id, secret). Note the bucket CORS must allow PUT
   from the frontend origin (step 4).
-- Resend account → API key + verified sending domain.
+- Brevo account → API key + verified single sender (no custom domain
+  needed; free 300/day).
 - Google/GitHub OAuth apps (optional) → client ids/secrets.
 - JSearch key (optional; without it local job search answers 503 by design).
 
@@ -30,7 +31,8 @@ free tier.)
 2. Fill every `sync: false` variable in the Environment tab:
    `DATABASE_URL` (Neon pooled URL), `BETTER_AUTH_SECRET` (fresh random
    32+ bytes — generate with `openssl rand -base64 32`),
-   `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `MyCareerArchive <mail@yourdomain>`),
+   `BREVO_API_KEY`, `EMAIL_FROM` (e.g. `MyCareerArchive <you@gmail.com>` —
+   must match the verified Brevo sender),
    `SUPABASE_S3_*` (endpoint, region, key id, secret),
    OAuth ids/secrets (if used), `JSEARCH_API_KEY` (if used).
 3. Replace the TODO placeholder after the API URL is known:
@@ -68,8 +70,9 @@ cookies and better-auth's built-in rate limiter (see `docs/SECURITY.md`).
    `https://<render>/api/auth/callback/github`.
 2. **Storage CORS** — Supabase bucket must allow `PUT` from `WEB_ORIGIN`
    (the Vercel URL), else browser uploads fail at the preflight.
-3. **Resend domain** — verify the sending domain; `EMAIL_FROM` must use it
-   (the `onboarding@resend.dev` sender only works for your own test address).
+3. **Brevo sender** — Brevo dashboard → Settings → Senders, Domains, IPs
+   → Senders → Add sender (your Gmail), paste the 6-digit inbox code;
+   `EMAIL_FROM` must match it. Then API Keys → generate `xkeysib-…` key.
 
 ## 5. Smoke test (production)
 

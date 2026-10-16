@@ -73,7 +73,7 @@ Phase 1 is complete only when:
 - [x] Protected routes (session middleware + ownership scoping)
 - [x] User ownership checks (unchanged — now fed by real sessions)
 - [x] OAuth app credentials in .env (Google + GitHub configured; provider URLs verified live)
-- [x] Email verification (Resend; strict gate — unverified login blocked)
+- [x] Email verification (Brevo; strict gate — unverified login blocked)
 - [x] Password reset (emailed token; old password invalidated)
 
 ---

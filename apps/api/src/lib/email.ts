@@ -1,4 +1,3 @@
-import { Resend } from "resend";
 import { logger } from "./logger.js";
 
 export interface EmailPayload {
@@ -11,21 +10,33 @@ export interface EmailPayload {
   url?: string;
 }
 
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
+// "Name <addr>" → Brevo { name, email }; bare "addr" → { email }.
+export function parseSender(from: string): { name?: string; email: string } {
+  const match = from.match(/^(.*)<([^<>]+)>\s*$/);
+  if (match) {
+    const name = match[1].trim().replace(/^["']|["']$/g, "");
+    return name ? { name, email: match[2].trim() } : { email: match[2].trim() };
+  }
+  return { email: from.trim() };
+}
+
 // Transactional sender for auth flows (verification, password reset).
-// - Production/dev-with-key: sends through Resend.
-// - Without RESEND_API_KEY (local dev, CI, tests): logs a structured record
+// - Production/dev-with-key: sends through Brevo (single-sender verification,
+//   no custom domain required — verify one address via inbox code).
+// - Without BREVO_API_KEY (local dev, CI, tests): logs a structured record
 //   instead of sending, so nothing hard-requires a key except real delivery.
 // Callers must fire-and-forget (no await) to avoid login-timing attacks.
 export async function sendEmail(payload: EmailPayload): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from =
-    process.env.EMAIL_FROM ?? "MyCareerArchive <onboarding@resend.dev>";
+  const apiKey = process.env.BREVO_API_KEY;
+  const from = process.env.EMAIL_FROM ?? "MyCareerArchive <noreply@example.com>";
 
   if (!apiKey) {
     logger.info(
       {
         event: "email.skipped",
-        reason: "RESEND_API_KEY not set",
+        reason: "BREVO_API_KEY not set",
         from,
         to: payload.to,
         subject: payload.subject,
@@ -36,15 +47,31 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
     return;
   }
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from,
-    to: payload.to,
-    subject: payload.subject,
-    html: payload.html,
-    text: payload.text,
-  });
-  if (error) {
+  try {
+    const sender = parseSender(from);
+    const res = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender,
+        to: [{ email: payload.to }],
+        subject: payload.subject,
+        htmlContent: payload.html,
+        textContent: payload.text,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      logger.error(
+        { event: "email.failed", to: payload.to, status: res.status, body: body.slice(0, 500) },
+        "email delivery failed",
+      );
+    }
+  } catch (error) {
     // Never throw into auth flows: a mail outage must not break login.
     logger.error({ event: "email.failed", to: payload.to, error }, "email delivery failed");
   }

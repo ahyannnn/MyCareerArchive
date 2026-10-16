@@ -55,7 +55,7 @@ DELETE /api/evidence/:id
   value verbatim, so relative paths strand users on the API origin.
   The web app builds them via `lib/frontend-url.ts`.
 - Password reset never leaks account existence (unknown emails also get
-  success). Email delivery via Resend (`RESEND_API_KEY`); without a key
+  success). Email delivery via Brevo (`BREVO_API_KEY`); without a key
   the API logs the link instead of sending (dev/test fallback).
 - Sessions: 7-day expiry, sliding refresh daily, stored in Postgres
   (`Session`/`Account`/`Verification` tables). Hot-path validation skips the
