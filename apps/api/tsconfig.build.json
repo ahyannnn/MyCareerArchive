@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  // Production build: tests, fixtures, and test helpers never ship to dist/.
+  // Type-checking of tests still happens via tsconfig.json (`npm run typecheck`, CI).
+  "exclude": ["src/**/*.test.ts", "src/test-setup.ts", "src/test-utils"]
+}

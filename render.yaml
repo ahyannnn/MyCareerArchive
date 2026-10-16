@@ -12,7 +12,11 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm ci && npm run prisma:generate && npm run build:api && npm run db:deploy
+    # --include=dev: Render builds with NODE_ENV=production, which makes
+    # plain `npm ci` skip devDependencies — but the build needs @types/*
+    # and the TS compiler. Migrations run last so a bad migration fails
+    # the build instead of boot-looping the new version.
+    buildCommand: npm ci --include=dev && npm run prisma:generate && npm run build:api && npm run db:deploy
     startCommand: npm run start --workspace=@mycareerarchive/api
     healthCheckPath: /api/health
     envVars:

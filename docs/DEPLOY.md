@@ -38,6 +38,10 @@ free tier.)
    `WEB_ORIGIN` → `https://<your-vercel-app>.vercel.app`.
 4. Deploy. Render runs build (ending with migrations) → start, then probes
    `GET /api/health`. First boot compiles slowly on free tier; give it minutes.
+   Two build gotchas already handled in config: the build installs devDeps
+   (`--include=dev`, because Render's production env would otherwise omit the
+   `@types/*` packages `tsc` needs), and Node is pinned to 20.x via root
+   `engines` (Render would otherwise pick the newest major).
 5. Free-tier note: services sleep after inactivity (cold starts ~30-60s).
    The Step 8 uptime ping doubles as a keep-warm.
 
