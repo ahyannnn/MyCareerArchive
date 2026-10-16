@@ -18,9 +18,11 @@ leave Vercel's Root Directory at the repository root).
 
 ## 1. Deploy order (matters)
 
-Database → API → web. The API's `preDeployCommand` (`npm run db:deploy`
-= `prisma migrate deploy`) runs migrations automatically on every Render
-deploy, including the first — so the database only needs to *exist* first.
+Database → API → web. The API's build step ends with `npm run db:deploy`
+(`prisma migrate deploy`), so migrations run automatically on every Render
+deploy, including the first — the database only needs to *exist* first.
+(Build-time, not `preDeployCommand`: the latter is paywalled on Render's
+free tier.)
 
 ## 2. Render (API)
 
@@ -34,7 +36,7 @@ deploy, including the first — so the database only needs to *exist* first.
 3. Replace the two TODO placeholders after URLs are known:
    `BETTER_AUTH_URL` → `https://<your-render-service>.onrender.com`,
    `WEB_ORIGIN` → `https://<your-vercel-app>.vercel.app`.
-4. Deploy. Render runs build → migrations → start, then probes
+4. Deploy. Render runs build (ending with migrations) → start, then probes
    `GET /api/health`. First boot compiles slowly on free tier; give it minutes.
 5. Free-tier note: services sleep after inactivity (cold starts ~30-60s).
    The Step 8 uptime ping doubles as a keep-warm.

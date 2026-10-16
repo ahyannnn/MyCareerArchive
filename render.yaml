@@ -12,9 +12,7 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm ci && npm run prisma:generate && npm run build:api
-    # Runs after build, before the new version receives traffic.
-    preDeployCommand: npm run db:deploy
+    buildCommand: npm ci && npm run prisma:generate && npm run build:api && npm run db:deploy
     startCommand: npm run start --workspace=@mycareerarchive/api
     healthCheckPath: /api/health
     envVars:
