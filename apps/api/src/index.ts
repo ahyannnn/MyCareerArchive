@@ -49,11 +49,33 @@ export function createApp() {
   // Request logging with correlation ids. Honors an incoming X-Request-Id
   // (for tracing across web -> api), otherwise generates one; echoed back
   // so clients can quote it in bug reports. Never touches the body stream.
+  // Slim by design: health probes are skipped (Render hits them every ~5s),
+  // secrets are redacted (session cookies must never reach log storage),
+  // and only method/url/status/timing are kept — full header dumps made
+  // Render logs unreadable.
   app.use(
     pinoHttp({
       logger,
       genReqId: (req) => (req.headers["x-request-id"] as string | undefined) ?? randomUUID(),
       customProps: (req) => ({ requestId: (req as unknown as { id: string }).id }),
+      autoLogging: {
+        ignore: (req) => req.url?.split("?")[0]?.startsWith("/api/health") ?? false,
+      },
+      redact: [
+        "req.headers.cookie",
+        "req.headers.authorization",
+        "res.headers[\"set-cookie\"]",
+      ],
+      serializers: {
+        req: (req) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          method: (req as any).method,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          url: (req as any).url?.split("?")[0],
+        }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        res: (res) => ({ statusCode: (res as any).statusCode }),
+      },
     }),
   );
   app.use((req, res, next) => {
