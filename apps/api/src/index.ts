@@ -7,6 +7,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { pinoHttp } from "pino-http";
 import { logger } from "./lib/logger.js";
+import { corsOrigin } from "./lib/cors.js";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
@@ -88,12 +89,10 @@ export function createApp() {
   // CORS FIRST: browsers send an OPTIONS preflight before cross-origin
   // JSON requests, and it must be answered with CORS headers before any
   // route handler runs. cors() never touches the request body stream, so
-  // it is safe here. Never "*" with credentials:true.
-  const webOrigins = (process.env.WEB_ORIGIN ?? "http://localhost:3000")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  app.use(cors({ origin: webOrigins, credentials: true }));
+  // it is safe here. Origins come from lib/cors: exact WEB_ORIGIN entries
+  // plus WEB_ORIGIN_PATTERNS globs (e.g. Vercel previews). Never "*" with
+  // credentials:true.
+  app.use(cors({ origin: corsOrigin, credentials: true }));
 
   // Better Auth SECOND: it reads the raw request stream, so body parsers
   // must not run before it — otherwise auth requests hang. (Express 4

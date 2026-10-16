@@ -15,7 +15,7 @@ Tests added: `apps/api/src/index.test.ts` (headers, both limiters).
 | Private storage | ✅ | Buckets must be private; browser uploads via presigned PUTs locked to declared Content-Type; downloads via 1h presigned GETs; keys namespaced `users/<id>/…`; sizes verified server-side at complete-time |
 | Auth hardening | ✅ | better-auth: email verification required, 7-day sessions with 5-min cookie cache, Secure + httpOnly + lax cookies in production, built-in rate limiting in production (100/10s), no user enumeration on reset/duplicate signup; covered by `routes/auth.test.ts` |
 | SQL injection | ✅ | Prisma only; the one raw-SQL builder (`timelineYearConditions`) uses parameterized `Prisma.sql` — no string interpolation |
-| CORS | ✅ | Explicit allowlist from `WEB_ORIGIN` (comma-separated), `credentials: true`, never `*` |
+| CORS | ✅ | Exact allowlist from `WEB_ORIGIN` plus `WEB_ORIGIN_PATTERNS` globs (e.g. project-scoped Vercel previews) enforced identically by Express (`lib/cors.ts`) and better-auth `trustedOrigins`; `credentials: true`, never `*` |
 | Runtime deps | ✅ | express 4.22.3 / qs 6.16.0 current with no advisories; top-level better-auth 1.7.7 is above the ≤1.6.21 advisory range |
 
 ## Findings implemented in this step

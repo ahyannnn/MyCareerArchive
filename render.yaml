@@ -27,9 +27,15 @@ services:
       # TODO: replace with the real Render service URL after first deploy.
       - key: BETTER_AUTH_URL
         value: https://mycareerarchive-api.onrender.com
-      # TODO: replace with the real Vercel frontend URL (comma-separate extras).
+      # Production frontend. Comma-separate more exact origins if needed.
+      # Non-secret values sync from this file automatically on deploy.
       - key: WEB_ORIGIN
-        value: https://mycareerarchive.vercel.app
+        value: https://mycareerarchive-tdg9.vercel.app
+      # Glob patterns (better-auth syntax: `*` never crosses `/`) for
+      # preview deployments of this project. Same list feeds both Express
+      # CORS and better-auth trustedOrigins, so preflight and auth agree.
+      - key: WEB_ORIGIN_PATTERNS
+        value: https://mycareerarchive-*.vercel.app
       - key: STORAGE_DRIVER
         value: supabase
       - key: SUPABASE_S3_BUCKET

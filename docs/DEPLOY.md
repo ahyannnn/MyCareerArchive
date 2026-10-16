@@ -33,9 +33,11 @@ free tier.)
    `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `MyCareerArchive <mail@yourdomain>`),
    `SUPABASE_S3_*` (endpoint, region, key id, secret),
    OAuth ids/secrets (if used), `JSEARCH_API_KEY` (if used).
-3. Replace the two TODO placeholders after URLs are known:
-   `BETTER_AUTH_URL` → `https://<your-render-service>.onrender.com`,
-   `WEB_ORIGIN` → `https://<your-vercel-app>.vercel.app`.
+3. Replace the TODO placeholder after the API URL is known:
+   `BETTER_AUTH_URL` → `https://<your-render-service>.onrender.com`.
+   `WEB_ORIGIN` / `WEB_ORIGIN_PATTERNS` already carry the production URL
+   and the preview glob — non-secret values sync from `render.yaml`
+   automatically, but confirm them in the dashboard after the first deploy.
 4. Deploy. Render runs build (ending with migrations) → start, then probes
    `GET /api/health`. First boot compiles slowly on free tier; give it minutes.
    Two build gotchas already handled in config: the build installs devDeps

@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { trustedOrigins } from "./lib/cors.js";
 import { passwordResetEmail, sendEmail, verificationEmail } from "./lib/email.js";
 import { prisma } from "./prisma.js";
 
@@ -52,12 +53,11 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? `http://localhost:${process.env.API_PORT ?? 4000}`,
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  // The browser page (:3000) and API (:4000) are different origins, so the
-  // API must explicitly trust the frontend origin for cookie flows.
-  trustedOrigins: (process.env.WEB_ORIGIN ?? "http://localhost:3000")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
+  // The browser page and API are different origins, so the API must
+  // explicitly trust the frontend origin(s) for cookie flows. Shares the
+  // single origin policy in lib/cors (exact entries + glob patterns, which
+  // better-auth matches natively) so preflight and auth checks agree.
+  trustedOrigins: trustedOrigins(),
   emailAndPassword: {
     enabled: true,
     // Strict mode: unverified users cannot log in. Note the side effect —

@@ -1,5 +1,5 @@
 import request from "supertest";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./index.js";
 
 const savedAuthMax = process.env.RATE_LIMIT_AUTH_MAX;
@@ -26,6 +26,48 @@ describe("security headers", () => {
     expect(res.headers["x-content-type-options"]).toBe("nosniff");
     expect(res.headers["x-frame-options"]).toBeDefined();
     expect(res.headers["x-powered-by"]).toBeUndefined();
+  });
+});
+
+describe("CORS preflight", () => {
+  const saved: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    saved.WEB_ORIGIN = process.env.WEB_ORIGIN;
+    saved.WEB_ORIGIN_PATTERNS = process.env.WEB_ORIGIN_PATTERNS;
+    process.env.WEB_ORIGIN = "https://mycareerarchive-tdg9.vercel.app";
+    process.env.WEB_ORIGIN_PATTERNS = "https://mycareerarchive-*.vercel.app";
+  });
+
+  afterEach(() => {
+    for (const k of Object.keys(saved)) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k] as string;
+    }
+  });
+
+  it("answers preflights for the prod origin and matching previews", async () => {
+    const app = createApp();
+    for (const origin of [
+      "https://mycareerarchive-tdg9.vercel.app",
+      "https://mycareerarchive-abc123-team.vercel.app",
+    ]) {
+      const res = await request(app)
+        .options("/api/auth/sign-in/social")
+        .set("Origin", origin)
+        .set("Access-Control-Request-Method", "POST");
+      expect(res.headers["access-control-allow-origin"]).toBe(origin);
+      expect(res.headers["access-control-allow-credentials"]).toBe("true");
+    }
+  });
+
+  it("omits CORS headers for untrusted origins", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .options("/api/auth/sign-in/social")
+      .set("Origin", "https://evil.com")
+      .set("Access-Control-Request-Method", "POST");
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
   });
 });
 
