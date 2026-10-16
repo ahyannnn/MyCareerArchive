@@ -57,4 +57,16 @@ describe("skills CRUD", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("VALIDATION_ERROR");
   });
+
+  it("filters the list by search and 404s unknown deletes", async () => {
+    await userA.agent.post("/api/skills").send({ name: "SearchableSkill" });
+    const hit = await userA.agent.get("/api/skills").query({ search: "searchableskill" });
+    expect(hit.body.data.map((s: { name: string }) => s.name)).toContain("SearchableSkill");
+    const miss = await userA.agent.get("/api/skills").query({ search: "zzz-no-such-skill" });
+    expect(miss.body.data).toEqual([]);
+
+    const gone = await userA.agent.delete("/api/skills/ck00000000000000000000099");
+    expect(gone.status).toBe(404);
+    expect(gone.body.error).toBe("NOT_FOUND");
+  });
 });

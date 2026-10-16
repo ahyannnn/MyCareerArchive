@@ -68,4 +68,28 @@ describe("organizations CRUD", () => {
     expect(fetched.body.data.organization).toBeNull();
     expect(fetched.body.data.title).toBe("Linked Credential");
   });
+
+  it("filters the list by search, patches fields independently, and 404s unknown deletes", async () => {
+    await userA.agent.post("/api/organizations").send({ name: "Searchable Org" });
+    const hit = await userA.agent.get("/api/organizations").query({ search: "searchable" });
+    expect(hit.body.data.map((o: { name: string }) => o.name)).toContain("Searchable Org");
+
+    const created = await userA.agent.post("/api/organizations").send({ name: "Patch Org" });
+    const id = created.body.data.id as string;
+    const webOnly = await userA.agent.patch(`/api/organizations/${id}`).send({
+      website: "https://patch.example",
+    });
+    expect(webOnly.status).toBe(200);
+    expect(webOnly.body.data).toMatchObject({ name: "Patch Org", website: "https://patch.example" });
+
+    const descOnly = await userA.agent.patch(`/api/organizations/${id}`).send({ description: "Nice place" });
+    expect(descOnly.body.data).toMatchObject({
+      name: "Patch Org",
+      website: "https://patch.example",
+      description: "Nice place",
+    });
+
+    const gone = await userA.agent.delete("/api/organizations/ck00000000000000000000099");
+    expect(gone.status).toBe(404);
+  });
 });

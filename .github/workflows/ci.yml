@@ -1,0 +1,61 @@
+# CI — typecheck, API docs check, API tests, production builds.
+#
+# Required repository secret:
+#   DATABASE_URL — hosted Postgres for the API integration tests (they use
+#   throwaway users and clean up after themselves; point it at a dev project,
+#   never production). Everything else the suite needs is stubbed in code
+#   (storage presigning is local crypto + aws-sdk-client-mock, emails are
+#   logged, job providers are stubbed).
+#
+# Recommended branch protection on master: require the "ci" check before
+# merging (Settings -> Branches -> Add rule -> Require status checks).
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Dummy public vars so `next build` can inline them; the real values
+      # live in Vercel project settings (see Step 7 deploy runbook).
+      NEXT_PUBLIC_API_URL: https://api.example.com
+      NEXT_PUBLIC_SITE_URL: https://app.example.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma validate + generate
+        run: npx prisma validate --schema prisma/schema.prisma && npm run prisma:generate
+
+      - name: Typecheck (api + web)
+        run: npm run typecheck
+
+      - name: API docs check
+        run: npm run docs:check --workspace=@mycareerarchive/api
+
+      - name: API tests (with coverage floors)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run test --workspace=@mycareerarchive/api -- --coverage.enabled
+
+      - name: Build API
+        run: npm run build:api
+
+      - name: Build web
+        run: npm run build:web

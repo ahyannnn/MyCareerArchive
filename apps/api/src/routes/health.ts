@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logger } from "../lib/logger.js";
 import { prisma } from "../prisma.js";
 
 export const healthRouter = Router();
@@ -19,8 +20,7 @@ healthRouter.get("/health/db", async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ ok: true, db: "connected" });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("[health/db]", err);
+    logger.error({ err }, "[health/db] unreachable");
     res.status(503).json({ ok: false, db: "unreachable" });
   }
 });

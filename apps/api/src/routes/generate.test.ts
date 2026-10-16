@@ -1,9 +1,13 @@
 import request from "supertest";
+import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { mockClient } from "aws-sdk-client-mock";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../index.js";
+import { __resetStorageForTests } from "../lib/storage.js";
 import { createTestAgent, deleteTestUser, type TestAgent } from "../test-utils/db.js";
 
 const app = createApp();
+const s3Mock = mockClient(S3Client);
 let userA!: TestAgent;
 let userB!: TestAgent;
 let projectId!: string;
@@ -151,5 +155,26 @@ describe("POST /api/interviews/prepare", () => {
     expect(bad.status).toBe(400);
     const foreign = await userB.agent.post("/api/interviews/prepare").send({ credentialIds: [projectId] });
     expect(foreign.status).toBe(404);
+  });
+});
+
+describe("portfolio/describe with uploaded evidence", () => {
+  it("cites evidence file names in the closing paragraph", async () => {
+    s3Mock.reset();
+    const init = await userA.agent.post(`/api/credentials/${projectId}/evidence/initiate`).send({
+      fileName: "demo.png",
+      mimeType: "image/png",
+      fileSize: 100,
+    });
+    expect(init.status).toBe(201);
+    s3Mock.on(HeadObjectCommand).resolves({ ContentLength: 100, ContentType: "image/png" });
+    const done = await userA.agent.post(`/api/evidence/${init.body.data.evidence.id}/complete`);
+    expect(done.status).toBe(200);
+
+    const res = await userA.agent.post("/api/portfolio/describe").send({ credentialIds: [projectId] });
+    expect(res.status).toBe(200);
+    const [entry] = res.body.data;
+    expect(entry.paragraphs.at(-1)).toContain("Documented with demo.png on file.");
+    __resetStorageForTests();
   });
 });

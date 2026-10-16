@@ -202,6 +202,15 @@ describe("POST /api/jobs/search (local, JSearch)", () => {
     expect(res.body.data.jobs[0].matchedSkills).toEqual(["jobsreact"]);
   });
 
+  it("honors an explicit location instead of the scope default", async () => {
+    const res = await userA.agent
+      .post("/api/jobs/search")
+      .send({ scope: "local", query: "developer", location: "Cebu, Philippines" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.location).toBe("Cebu, Philippines");
+    expect(res.body.data.jobs.length).toBeGreaterThan(0);
+  });
+
   it("returns 503 when JSEARCH_API_KEY is missing", async () => {
     delete process.env.JSEARCH_API_KEY;
     try {

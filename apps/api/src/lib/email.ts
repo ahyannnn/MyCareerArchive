@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { logger } from "./logger.js";
 
 export interface EmailPayload {
   to: string;
@@ -21,16 +22,16 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
     process.env.EMAIL_FROM ?? "MyCareerArchive <onboarding@resend.dev>";
 
   if (!apiKey) {
-    // eslint-disable-next-line no-console
-    console.log(
-      JSON.stringify({
+    logger.info(
+      {
         event: "email.skipped",
         reason: "RESEND_API_KEY not set",
         from,
         to: payload.to,
         subject: payload.subject,
         ...(payload.url ? { url: payload.url } : {}),
-      }),
+      },
+      "email skipped (no key)",
     );
     return;
   }
@@ -45,8 +46,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   });
   if (error) {
     // Never throw into auth flows: a mail outage must not break login.
-    // eslint-disable-next-line no-console
-    console.error(JSON.stringify({ event: "email.failed", to: payload.to, error }));
+    logger.error({ event: "email.failed", to: payload.to, error }, "email delivery failed");
   }
 }
 

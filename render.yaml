@@ -1,0 +1,64 @@
+# Render Blueprint — MyCareerArchive API (+ database migrations).
+#
+# Apply: Render dashboard -> New -> Blueprint -> select this repo.
+# Then fill every `sync: false` var in the dashboard (Render prompts for
+# them). Placeholders marked TODO must be replaced with your real URLs.
+#
+# Assumes: Neon Postgres (pooled URL), Supabase Storage (S3 protocol),
+# Resend email, Vercel frontend. Full checklist: docs/DEPLOY.md.
+services:
+  - type: web
+    name: mycareerarchive-api
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci && npm run prisma:generate && npm run build:api
+    # Runs after build, before the new version receives traffic.
+    preDeployCommand: npm run db:deploy
+    startCommand: npm run start --workspace=@mycareerarchive/api
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # TODO: replace with the real Render service URL after first deploy.
+      - key: BETTER_AUTH_URL
+        value: https://mycareerarchive-api.onrender.com
+      # TODO: replace with the real Vercel frontend URL (comma-separate extras).
+      - key: WEB_ORIGIN
+        value: https://mycareerarchive.vercel.app
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_S3_BUCKET
+        value: evidence
+      - key: EVIDENCE_MAX_MB
+        value: "25"
+      # Secrets below are intentionally empty here — set them in the
+      # Render dashboard (Environment tab). Never commit real values.
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SUPABASE_S3_ENDPOINT
+        sync: false
+      - key: SUPABASE_S3_REGION
+        sync: false
+      - key: SUPABASE_S3_ACCESS_KEY_ID
+        sync: false
+      - key: SUPABASE_S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: JSEARCH_API_KEY
+        sync: false

@@ -134,3 +134,58 @@ describe("credentials CRUD", () => {
     expect(gone.status).toBe(404);
   });
 });
+
+describe("credentials listing filters and patch semantics", () => {
+  it("filters by tag and supports every sort order", async () => {
+    const tag = await createTag("filter-tag");
+    const created = await userA.agent.post("/api/credentials").send({
+      title: "Tagged Filter Target",
+      type: "AWARD",
+      tagIds: [tag.id],
+    });
+    expect(created.status).toBe(201);
+
+    const byTag = await userA.agent.get("/api/credentials").query({ tag: "filter-tag" });
+    expect(byTag.status).toBe(200);
+    expect(byTag.body.data.map((c: { title: string }) => c.title)).toContain("Tagged Filter Target");
+
+    const noTag = await userA.agent.get("/api/credentials").query({ tag: "no-such-tag" });
+    expect(noTag.body.meta.total).toBe(0);
+
+    for (const sort of [
+      "date-desc",
+      "date-asc",
+      "created-desc",
+      "created-asc",
+      "updated-desc",
+      "updated-asc",
+    ]) {
+      const res = await userA.agent.get("/api/credentials").query({ sort, pageSize: 5 });
+      expect(res.status).toBe(200);
+      expect(res.body.meta.total).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("disconnects the organization and clears links on patch", async () => {
+    const org = await userA.agent.post("/api/organizations").send({ name: "Detach Org" });
+    const skill = await createSkill("DetachSkill");
+    const created = await userA.agent.post("/api/credentials").send({
+      title: "Detach Probe",
+      type: "PROJECT",
+      organizationId: org.body.data.id,
+      skillIds: [skill.id],
+    });
+    const id = created.body.data.id as string;
+    expect(created.body.data.organization.name).toBe("Detach Org");
+
+    const detached = await userA.agent.patch(`/api/credentials/${id}`).send({ organizationId: null });
+    expect(detached.status).toBe(200);
+    expect(detached.body.data.organization).toBeNull();
+
+    const cleared = await userA.agent.patch(`/api/credentials/${id}`).send({ skillIds: [] });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.data.skills).toEqual([]);
+
+    await userA.agent.delete(`/api/credentials/${id}`);
+  });
+});

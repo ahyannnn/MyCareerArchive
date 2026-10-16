@@ -45,4 +45,12 @@ describe("tags CRUD", () => {
     const res = await userA.agent.patch(`/api/tags/${created.body.data.id}`).send({ name: "changed" });
     expect(res.status).toBe(404);
   });
+
+  it("filters the list by search", async () => {
+    await userA.agent.post("/api/tags").send({ name: "searchable-tag" });
+    const hit = await userA.agent.get("/api/tags").query({ search: "SEARCHABLE" });
+    expect(hit.body.data.map((t: { name: string }) => t.name)).toContain("searchable-tag");
+    const miss = await userA.agent.get("/api/tags").query({ search: "zzz-no-such-tag" });
+    expect(miss.body.data).toEqual([]);
+  });
 });

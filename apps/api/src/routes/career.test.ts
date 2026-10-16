@@ -1,10 +1,14 @@
 import request from "supertest";
+import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { mockClient } from "aws-sdk-client-mock";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../index.js";
 import { __resetCacheForTests } from "../lib/cache.js";
+import { __resetStorageForTests } from "../lib/storage.js";
 import { createTestAgent, deleteTestUser, type TestAgent } from "../test-utils/db.js";
 
 const app = createApp();
+const s3Mock = mockClient(S3Client);
 let userA!: TestAgent;
 let userB!: TestAgent;
 
@@ -312,5 +316,111 @@ describe("phase 9 perf: profile aggregate caching", () => {
     __resetCacheForTests();
     const fresh = await userA.agent.get("/api/career/profile");
     expect(fresh.body.data.totals.credentials).toBe(totalBefore + 1);
+  });
+});
+
+describe("timeline skill/tag/search filters", () => {
+  function titlesOf(res: { body: { data: { credentials: { title: string }[] }[] } }) {
+    return res.body.data.flatMap((g) => g.credentials.map((c) => c.title));
+  }
+
+  it("filters by skill, tag, and free text", async () => {
+    const bySkill = await userA.agent.get("/api/timeline").query({ skill: "CareerNode", pageSize: 50 });
+    expect(bySkill.status).toBe(200);
+    const skillTitles = titlesOf(bySkill);
+    expect(skillTitles).toContain("Timeline Project Alpha");
+    expect(skillTitles).not.toContain("Timeline Talk Gamma");
+
+    const byTag = await userA.agent.get("/api/timeline").query({ tag: "career-portfolio-tag", pageSize: 50 });
+    expect(titlesOf(byTag)).toEqual(["Timeline Project Alpha"]);
+
+    const bySearch = await userA.agent.get("/api/timeline").query({ search: "Gamma", pageSize: 50 });
+    expect(titlesOf(bySearch)).toEqual(["Timeline Talk Gamma"]);
+  });
+});
+
+describe("resume ranking tie-breaks and field scoring", () => {
+  it("breaks score ties by date, undated last", async () => {
+    const res = await userA.agent.post("/api/resume/build").send({ targetRole: "Timeline", limit: 10 });
+    expect(res.status).toBe(200);
+    expect(res.body.data.matched.map((c: { title: string }) => c.title)).toEqual([
+      "Timeline Cert Beta",
+      "Timeline Project Alpha",
+      "Timeline Talk Gamma",
+    ]);
+  });
+
+  it("scores description, tag, and organization matches", async () => {
+    const org = await userA.agent.post("/api/organizations").send({ name: "Scoretoken Org" });
+    expect(org.status).toBe(201);
+    const withOrg = await userA.agent.post("/api/credentials").send({
+      title: "Scoretoken Seminar",
+      type: "SEMINAR",
+      organizationId: org.body.data.id,
+    });
+    expect(withOrg.status).toBe(201);
+
+    const res = await userA.agent
+      .post("/api/resume/build")
+      .send({ targetRole: "Backend portfolio scoretoken", limit: 10 });
+    expect(res.status).toBe(200);
+    const titles = res.body.data.matched.map((c: { title: string }) => c.title);
+    // Delta wins on title+description; tag and org matches are also selected.
+    expect(titles[0]).toBe("Resume Backend Delta");
+    expect(titles).toContain("Timeline Project Alpha");
+    expect(titles).toContain("Scoretoken Seminar");
+  });
+});
+
+describe("portfolio ordering and evidence names", () => {
+  it("honors explicit credentialIds order", async () => {
+    const res = await userA.agent
+      .post("/api/portfolio/build")
+      .send({ credentialIds: [credentialIds.beta, credentialIds.alpha] });
+    expect(res.status).toBe(200);
+    expect(res.body.data.entries.map((e: { credential: { id: string } }) => e.credential.id)).toEqual([
+      credentialIds.beta,
+      credentialIds.alpha,
+    ]);
+  });
+
+  it("names uploaded evidence files in entries", async () => {
+    s3Mock.reset();
+    const init = await userA.agent.post(`/api/credentials/${credentialIds.alpha}/evidence/initiate`).send({
+      fileName: "alpha-proof.pdf",
+      mimeType: "application/pdf",
+      fileSize: 100,
+    });
+    expect(init.status).toBe(201);
+    s3Mock.on(HeadObjectCommand).resolves({ ContentLength: 100, ContentType: "application/pdf" });
+    const done = await userA.agent.post(`/api/evidence/${init.body.data.evidence.id}/complete`);
+    expect(done.status).toBe(200);
+
+    const res = await userA.agent.post("/api/portfolio/build").send({ credentialIds: [credentialIds.alpha] });
+    expect(res.status).toBe(200);
+    expect(res.body.data.entries[0].markdown).toContain("alpha-proof.pdf");
+    __resetStorageForTests();
+  });
+});
+
+describe("skill history tie-breaks", () => {
+  it("falls back to name order on equal counts and dates", async () => {
+    for (const [skill, title] of [["TieZulu", "Tie Zulu Talk"], ["TieAlpha", "Tie Alpha Talk"]] as const) {
+      const s = await userA.agent.post("/api/skills").send({ name: skill });
+      expect(s.status).toBe(201);
+      const c = await userA.agent.post("/api/credentials").send({
+        title,
+        type: "SEMINAR",
+        skillIds: [s.body.data.id],
+      });
+      expect(c.status).toBe(201);
+    }
+    const byCount = await userA.agent.get("/api/career/skills").query({ sort: "count" });
+    const namesCount = byCount.body.data.map((s: { name: string }) => s.name);
+    expect(namesCount.indexOf("TieAlpha")).toBeLessThan(namesCount.indexOf("TieZulu"));
+
+    const byRecent = await userA.agent.get("/api/career/skills").query({ sort: "recent" });
+    const namesRecent = byRecent.body.data.map((s: { name: string }) => s.name);
+    expect(namesRecent.indexOf("TieAlpha")).toBeLessThan(namesRecent.indexOf("TieZulu"));
   });
 });

@@ -1,0 +1,1106 @@
+openapi: 3.0.3
+info:
+  title: MyCareerArchive API
+  version: 0.1.0
+  description: |
+    Personal career evidence system. Every credential is owned by the
+    authenticated user; foreign ids answer 404 (never 403) so ids are
+    not usable as oracles. All failures use the envelope
+    `{ ok: false, error: CODE, message?, details? }`.
+
+    Authentication is session-cookie based (Better Auth, `/api/auth/*`).
+    Send the session cookie with every request.
+servers:
+  - url: http://localhost:4000
+    description: Local development
+tags:
+  - name: Health
+  - name: Credentials
+  - name: Evidence
+  - name: Skills
+  - name: Tags
+  - name: Organizations
+  - name: Career
+  - name: Generate
+  - name: Jobs
+  - name: Docs
+security:
+  - cookieAuth: []
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: API is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  service: { type: string, example: mycareerarchive-api }
+                  timestamp: { type: string, format: date-time }
+  /api/health/db:
+    get:
+      tags: [Health]
+      summary: Database connectivity probe
+      security: []
+      responses:
+        "200":
+          description: Database reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  db: { type: string, example: connected }
+        "503":
+          description: Database unconfigured or unreachable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/credentials:
+    post:
+      tags: [Credentials]
+      summary: Create a credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Credential" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    get:
+      tags: [Credentials]
+      summary: List credentials with search, filters, and sorting
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: type, in: query, schema: { $ref: "#/components/schemas/CredentialType" } }
+        - { name: organizationId, in: query, schema: { type: string } }
+        - { name: year, in: query, schema: { type: integer, minimum: 1900, maximum: 2100 } }
+        - { name: skill, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: tag, in: query, schema: { type: string, maxLength: 100 } }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date-desc, date-asc, created-desc, created-asc, updated-desc, updated-asc]
+            default: date-desc
+      responses:
+        "200":
+          description: Paginated credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/Credential" } }
+                  meta:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      pageSize: { type: integer }
+                      total: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/credentials/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    get:
+      tags: [Credentials]
+      summary: Read one credential
+      responses:
+        "200":
+          description: The credential
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Credential" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Credentials]
+      summary: Update a credential (skillIds/tagIds replace when present)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Credential" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Credentials]
+      summary: Delete a credential
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/credentials/{id}/evidence:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    get:
+      tags: [Evidence]
+      summary: List a credential's evidence, newest first
+      responses:
+        "200":
+          description: Evidence list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/Evidence" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/credentials/{id}/evidence/initiate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Credential id
+        schema: { type: string }
+    post:
+      tags: [Evidence]
+      summary: Reserve an evidence row and get a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, mimeType, fileSize]
+              properties:
+                fileName: { type: string, maxLength: 255 }
+                mimeType: { type: string, description: Must be on the allowlist }
+                fileSize: { type: integer, minimum: 1, description: Declared size; verified server-side at complete-time }
+      responses:
+        "201":
+          description: Reserved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      evidence: { $ref: "#/components/schemas/Evidence" }
+                      uploadUrl: { type: string }
+                      expiresIn: { type: integer, example: 900 }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503":
+          description: Storage unconfigured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/evidence/{id}/complete:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    post:
+      tags: [Evidence]
+      summary: Confirm the browser upload landed (idempotent)
+      responses:
+        "200":
+          description: Confirmed with the real storage size
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Evidence" }
+        "400":
+          description: File missing or too large
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/evidence/{id}/url:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    get:
+      tags: [Evidence]
+      summary: Get a short-lived download URL for uploaded evidence
+      responses:
+        "200":
+          description: Download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      url: { type: string }
+                      expiresIn: { type: integer, example: 3600 }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/evidence/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    delete:
+      tags: [Evidence]
+      summary: Delete the object and its row
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/skills:
+    get:
+      tags: [Skills]
+      summary: List skills
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+      responses:
+        "200":
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/Skill" } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [Skills]
+      summary: Create a skill (names unique per user)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Skill" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/skills/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    patch:
+      tags: [Skills]
+      summary: Rename a skill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Skill" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Skills]
+      summary: Delete a skill
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/tags:
+    get:
+      tags: [Tags]
+      summary: List tags
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+      responses:
+        "200":
+          description: Tags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/Tag" } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [Tags]
+      summary: Create a tag (names unique per user; tags are rename-by-recreate, no PATCH)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Tag" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/tags/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    delete:
+      tags: [Tags]
+      summary: Delete a tag
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/organizations:
+    get:
+      tags: [Organizations]
+      summary: List organizations
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+      responses:
+        "200":
+          description: Organizations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/Organization" } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [Organizations]
+      summary: Create an organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 200 }
+                website: { type: string, nullable: true, maxLength: 2048 }
+                description: { type: string, maxLength: 5000 }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Organization" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/organizations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CuidId"
+    patch:
+      tags: [Organizations]
+      summary: Update an organization (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 200 }
+                website: { type: string, nullable: true, maxLength: 2048 }
+                description: { type: string, maxLength: 5000 }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Organization" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Organizations]
+      summary: Delete an organization (linked credentials keep history via SetNull)
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/timeline:
+    get:
+      tags: [Career]
+      summary: Year-grouped credential timeline
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: type, in: query, schema: { $ref: "#/components/schemas/CredentialType" } }
+        - { name: skill, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: tag, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: year, in: query, schema: { type: integer, minimum: 1900, maximum: 2100 } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [date-desc, date-asc], default: date-desc }
+      responses:
+        "200":
+          description: Year groups, newest year first, undated last
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/TimelineGroup" } }
+                  meta:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      pageSize: { type: integer }
+                      total: { type: integer }
+                      totalYears: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/career/profile:
+    get:
+      tags: [Career]
+      summary: Career aggregates (cached 60s per user)
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/CareerProfile" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/career/skills:
+    get:
+      tags: [Career]
+      summary: Per-skill usage history (counts and dates, never proficiency scores)
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [count, recent, name], default: count }
+      responses:
+        "200":
+          description: Skill history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { type: array, items: { $ref: "#/components/schemas/SkillHistory" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/career/qualifications:
+    get:
+      tags: [Jobs]
+      summary: Top skills, years active, and suggested job queries (cached 60s per user)
+      responses:
+        "200":
+          description: Qualifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Qualifications" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/resume/build:
+    post:
+      tags: [Career]
+      summary: Build deterministic resume markdown from stored credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetRole: { type: string, maxLength: 200 }
+                credentialIds: { type: array, items: { type: string }, maxItems: 100 }
+                skill: { type: string, maxLength: 100 }
+                tag: { type: string, maxLength: 100 }
+                includeTypes: { type: array, items: { $ref: "#/components/schemas/CredentialType" }, maxItems: 10 }
+                limit: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Ranked credentials plus markdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      matched: { type: array, items: { $ref: "#/components/schemas/Credential" } }
+                      markdown: { type: string }
+                      targetRole: { type: string, nullable: true }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/portfolio/build:
+    post:
+      tags: [Career]
+      summary: Build deterministic per-entry portfolio markdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                credentialIds: { type: array, items: { type: string }, maxItems: 100 }
+                type: { $ref: "#/components/schemas/CredentialType" }
+                skill: { type: string, maxLength: 100 }
+                tag: { type: string, maxLength: 100 }
+                search: { type: string, maxLength: 200 }
+                limit: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Entries plus combined document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      entries:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            credential: { $ref: "#/components/schemas/Credential" }
+                            markdown: { type: string }
+                      combinedMarkdown: { type: string }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resume/bullets:
+    post:
+      tags: [Generate]
+      summary: Generate template resume bullets from stored fields only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credentialIds]
+              properties:
+                credentialIds: { type: array, items: { type: string }, minItems: 1, maxItems: 20 }
+      responses:
+        "200":
+          description: Bullets per credential
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        credentialId: { type: string }
+                        title: { type: string }
+                        lines: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/portfolio/describe:
+    post:
+      tags: [Generate]
+      summary: Generate polished portfolio paragraphs from stored fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credentialIds]
+              properties:
+                credentialIds: { type: array, items: { type: string }, minItems: 1, maxItems: 20 }
+      responses:
+        "200":
+          description: Paragraphs per credential
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        credentialId: { type: string }
+                        title: { type: string }
+                        paragraphs: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/interviews/prepare:
+    post:
+      tags: [Generate]
+      summary: Generate interview questions with evidence-citing talking points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                credentialIds: { type: array, items: { type: string }, maxItems: 20 }
+                skill: { type: string, maxLength: 100 }
+                limit: { type: integer, minimum: 1, maximum: 20, default: 10 }
+      responses:
+        "200":
+          description: Questions (empty, not error, for an empty vault)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      questions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            credentialId: { type: string }
+                            credentialTitle: { type: string }
+                            question: { type: string }
+                            talkingPoints: { type: array, items: { type: string } }
+                      totalCredentials: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/jobs/search:
+    post:
+      tags: [Jobs]
+      summary: Search job listings with skill-overlap scoring (deterministic, no AI)
+      description: |
+        `local` = Philippines listings via JSearch (requires server key,
+        else 503 JOBS_UNCONFIGURED). `international` = worldwide remote via
+        the Remotive public API. Provider results are cached 6h; scoring is
+        per-request against the skill set. Remotive listings must be credited
+        to Remotive with a link back (provider terms).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scope]
+              properties:
+                scope: { type: string, enum: [local, international] }
+                query: { type: string, maxLength: 200, description: Defaults to the top skill }
+                location: { type: string, maxLength: 100, description: Local only; defaults to Philippines }
+                skills: { type: array, items: { type: string }, maxItems: 50 }
+                limit: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Scored listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      jobs: { type: array, items: { $ref: "#/components/schemas/ScoredJob" } }
+                      cached: { type: boolean }
+                      scope: { type: string }
+                      query: { type: string, nullable: true }
+                      location: { type: string }
+                      totalSkills: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "503":
+          description: Job provider unconfigured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/openapi.yaml:
+    get:
+      tags: [Docs]
+      summary: This OpenAPI document
+      security: []
+      responses:
+        "200":
+          description: YAML spec
+          content:
+            text/yaml:
+              schema: { type: string }
+  /api/docs:
+    get:
+      tags: [Docs]
+      summary: Interactive API reference (Swagger UI)
+      security: []
+      responses:
+        "200":
+          description: HTML documentation page
+          content:
+            text/html:
+              schema: { type: string }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: Better Auth session cookie (plus the session_data cache cookie)
+  parameters:
+    CuidId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  responses:
+    ValidationError:
+      description: Zod validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthenticated:
+      description: Missing or invalid session
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Missing or foreign resource
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Duplicate per-user name
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, example: false }
+        error: { type: string, example: NOT_FOUND }
+        message: { type: string }
+        details: { type: object }
+    CredentialType:
+      type: string
+      enum: [PROJECT, CERTIFICATE, SEMINAR, TRAINING, AWARD, COMPETITION, INTERNSHIP, ORGANIZATION, VOLUNTEER, OTHER]
+    Credential:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        type: { $ref: "#/components/schemas/CredentialType" }
+        date: { type: string, format: date-time, nullable: true }
+        location: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        organization:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string }
+            name: { type: string }
+            website: { type: string, nullable: true }
+        skills:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+        evidenceCount: { type: integer }
+        preview:
+          type: object
+          nullable: true
+          properties:
+            evidenceId: { type: string }
+            mimeType: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CredentialInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        type: { $ref: "#/components/schemas/CredentialType", default: OTHER }
+        organizationId: { type: string, nullable: true }
+        date: { type: string, format: date-time, nullable: true }
+        location: { type: string, maxLength: 200 }
+        url: { type: string, maxLength: 2048, nullable: true }
+        skillIds: { type: array, items: { type: string }, maxItems: 100 }
+        tagIds: { type: array, items: { type: string }, maxItems: 100 }
+    CredentialPatch:
+      type: object
+      properties:
+        title: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        type: { $ref: "#/components/schemas/CredentialType" }
+        organizationId: { type: string, nullable: true }
+        date: { type: string, format: date-time, nullable: true }
+        location: { type: string, maxLength: 200 }
+        url: { type: string, maxLength: 2048, nullable: true }
+        skillIds:
+          type: array
+          items: { type: string }
+          maxItems: 100
+          description: Replace semantics when present; untouched when omitted
+        tagIds:
+          type: array
+          items: { type: string }
+          maxItems: 100
+          description: Replace semantics when present; untouched when omitted
+    Skill:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        credentialCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    Tag:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        credentialCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    Organization:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        website: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        credentialCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Evidence:
+      type: object
+      properties:
+        id: { type: string }
+        credentialId: { type: string }
+        fileName: { type: string }
+        fileType: { type: string, nullable: true }
+        mimeType: { type: string, nullable: true }
+        fileSize: { type: integer }
+        status: { type: string, enum: [PENDING, UPLOADED, FAILED] }
+        createdAt: { type: string, format: date-time }
+    TimelineGroup:
+      type: object
+      properties:
+        year: { type: integer, nullable: true }
+        count: { type: integer }
+        credentials: { type: array, items: { $ref: "#/components/schemas/Credential" } }
+    CareerProfile:
+      type: object
+      properties:
+        totals:
+          type: object
+          properties:
+            credentials: { type: integer }
+            evidence: { type: integer }
+            skills: { type: integer }
+            tags: { type: integer }
+            organizations: { type: integer }
+            byType: { type: object, additionalProperties: { type: integer } }
+        dateRange:
+          type: object
+          properties:
+            earliest: { type: string, format: date-time, nullable: true }
+            latest: { type: string, format: date-time, nullable: true }
+        topSkills: { type: array, items: { type: object } }
+        topTags: { type: array, items: { type: object } }
+        evidenceCoverage:
+          type: object
+          properties:
+            withEvidence: { type: integer }
+            withoutEvidence: { type: integer }
+    SkillHistory:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        credentialCount: { type: integer }
+        firstUsed: { type: string, format: date-time, nullable: true }
+        lastUsed: { type: string, format: date-time, nullable: true }
+        credentials:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              date: { type: string, format: date-time, nullable: true }
+              type: { $ref: "#/components/schemas/CredentialType" }
+    Qualifications:
+      type: object
+      properties:
+        topSkills: { type: array, items: { type: object } }
+        totalCredentials: { type: integer }
+        yearsActive:
+          type: object
+          nullable: true
+          properties:
+            start: { type: string, format: date-time }
+            end: { type: string, format: date-time }
+        byType: { type: object, additionalProperties: { type: integer } }
+        suggestedQueries: { type: array, items: { type: string } }
+    ScoredJob:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        company: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        workType: { type: string, enum: [ONSITE, REMOTE, HYBRID, UNKNOWN] }
+        salaryMin: { type: number, nullable: true }
+        salaryMax: { type: number, nullable: true }
+        salaryText: { type: string, nullable: true }
+        postedAt: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        snippet: { type: string, nullable: true }
+        source: { type: string, enum: [JSEARCH, REMOTIVE] }
+        score: { type: integer }
+        matchedSkills: { type: array, items: { type: string } }

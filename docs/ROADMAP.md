@@ -140,12 +140,12 @@ Phase 1 is complete only when:
 
 # Phase 10 — Production
 
-- [ ] Unit tests
-- [ ] API tests
-- [ ] Security review
-- [ ] OpenAPI documentation
-- [ ] GitHub Actions
-- [ ] Deployment
-- [ ] Logging
+- [x] Unit tests
+- [x] API tests
+- [x] Security review (see docs/SECURITY.md: helmet, auth+API rate limits, trust proxy; residual risks documented)
+- [x] OpenAPI documentation (apps/api/openapi.yaml + /api/docs Swagger UI + /api/openapi.yaml; `docs:check` in CI)
+- [x] GitHub Actions (`.github/workflows/ci.yml`: install → prisma validate/generate → typecheck → docs:check → API tests with coverage floors → api+web builds; needs `DATABASE_URL` secret; protect master with the `ci` check)
+- [x] Deployment (`render.yaml` API + `vercel.json` web + `docs/DEPLOY.md` runbook; dashboard apply + post-deploy wiring remain manual)
+- [x] Logging (pino JSON in prod / pretty in dev / silent in tests; pino-http request logs with X-Request-Id; LOG_LEVEL env)
 - [ ] Monitoring
 - [ ] Backup strategy

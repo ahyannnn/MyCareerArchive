@@ -93,6 +93,16 @@ describe("evidence initiate", () => {
     expect(anon.status).toBe(401);
   });
 
+  it("stores a null fileType for extensionless filenames", async () => {
+    const res = await initiate(userA.agent, credentialId, {
+      fileName: "README",
+      mimeType: "text/plain",
+      fileSize: 10,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.data.evidence.fileType).toBeNull();
+  });
+
   it("returns 503 when storage is unconfigured", async () => {
     __resetStorageForTests();
     const saved = process.env.R2_BUCKET;

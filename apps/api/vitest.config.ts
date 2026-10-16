@@ -9,5 +9,18 @@ export default defineConfig({
     // defaults on slow networks. These are wall-clock budgets only.
     testTimeout: 30000,
     hookTimeout: 120000,
+    coverage: {
+      provider: "v8",
+      reporter: ["text"],
+      // Test helpers are not production code.
+      exclude: ["src/test-utils/**"],
+      // Phase 10 floor: the suite must stay above these or fail.
+      thresholds: {
+        statements: 88,
+        branches: 78,
+        functions: 90,
+        lines: 88,
+      },
+    },
   },
 });

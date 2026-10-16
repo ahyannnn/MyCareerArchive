@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../lib/errors.js";
+import { logger } from "../lib/logger.js";
 
 // Central error handler. Every failure leaves here with the envelope:
 //   { ok: false, error: CODE, message?, details? }
@@ -39,8 +40,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     }
   }
 
-  // eslint-disable-next-line no-console
-  console.error(err);
+  logger.error({ err }, "unhandled error");
   res.status(500).json({ ok: false, error: "INTERNAL_ERROR" });
 }
 
