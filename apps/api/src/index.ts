@@ -120,8 +120,19 @@ export function createApp() {
   // must not run before it — otherwise auth requests hang. (Express 4
   // wildcard syntax; Express 5 would need "/api/auth/*splat".)
   app.use("/api/auth", authLimiter);
+  // Resolve the client IP the same way Render's edge does (first X-Forwarded-For
+  // entry) and hand it to Better Auth under a trusted header, so its rate
+  // limiter keys per real client instead of one shared bucket.
+  app.use("/api/auth", (req, _res, next) => {
+    const forwarded = req.headers["x-forwarded-for"];
+    const firstForwarded =
+      typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : undefined;
+    const realIp = typeof req.headers["x-real-ip"] === "string" ? req.headers["x-real-ip"].trim() : undefined;
+    const clientIp = firstForwarded || realIp || req.ip;
+    if (clientIp) req.headers["x-client-ip"] = clientIp;
+    next();
+  });
   app.all("/api/auth/*", toNodeHandler(auth));
-
   // Body parsing LAST (for our own routes only — auth already handled above).
   app.use(express.json({ limit: "1mb" }));
 

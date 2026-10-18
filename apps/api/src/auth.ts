@@ -53,6 +53,15 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? `http://localhost:${process.env.API_PORT ?? 4000}`,
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  advanced: {
+    // Render terminates TLS behind a proxy; Express resolves the real client
+    // IP (trust proxy = 1) and forwards it below. Better Auth's limiter
+    // keys per client instead of one shared bucket.
+    ipAddress: {
+      ipAddressHeaders: ["x-client-ip", "x-forwarded-for"],
+      trustedProxies: ["127.0.0.0/8", "::1/128", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+    },
+  },
   // The browser page and API are different origins, so the API must
   // explicitly trust the frontend origin(s) for cookie flows. Shares the
   // single origin policy in lib/cors (exact entries + glob patterns, which
