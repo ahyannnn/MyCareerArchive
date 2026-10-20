@@ -1,6 +1,7 @@
 "use client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Relative: requests go through the Next.js /api proxy so cookies stay first-party.
+const API = "";
 
 export class ApiError extends Error {
   status: number;

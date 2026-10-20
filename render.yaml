@@ -24,9 +24,10 @@ services:
         value: production
       - key: LOG_LEVEL
         value: info
-      # TODO: replace with the real Render service URL after first deploy.
+      # Frontend origin: auth cookies become first-party via the Next.js /api proxy,
+      # and OAuth/email links land on the frontend (proxied to this service).
       - key: BETTER_AUTH_URL
-        value: https://mycareerarchive-api.onrender.com
+        value: https://mycareerarchive-tdg9.vercel.app
       # Production frontend. Comma-separate more exact origins if needed.
       # Non-secret values sync from this file automatically on deploy.
       - key: WEB_ORIGIN
