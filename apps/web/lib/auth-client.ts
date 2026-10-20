@@ -4,6 +4,8 @@ import { createAuthClient } from "better-auth/react";
 // at the API origin. Cookie sessions flow automatically on every call
 // because the client sends `credentials: "include"` (same-site localhost
 // in dev; see trustedOrigins + CORS on the API side).
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+console.log("[auth-client] baseURL =", apiUrl, "env =", process.env.NEXT_PUBLIC_API_URL);
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
+  baseURL: apiUrl,
 });
