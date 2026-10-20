@@ -25,36 +25,25 @@ export default function LoginPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log("[login] onSubmit start", { email });
     setError(null);
     setNeedsVerification(false);
     setPending(true);
-    try {
-      const res = await authClient.signIn.email({ email, password });
-      console.log("[login] signIn.email result", res);
-      const { error } = (res ?? {}) as { error?: { code?: string; message?: string } };
-      setPending(false);
-      if (error) {
-        console.log("[login] signIn.email error", error);
-        // Strict gate: unverified accounts must click the inbox link first.
-        const code = `${error.code ?? ""} ${error.message ?? ""}`;
-        if (/verif/i.test(code)) {
-          setNeedsVerification(true);
-          setError("Please verify your email first. Check your inbox for the link.");
-          return;
-        }
-        setError(error.message ?? "Sign-in failed");
+    const { error } = await authClient.signIn.email({ email, password });
+    setPending(false);
+    if (error) {
+      // Strict gate: unverified accounts must click the inbox link first.
+      const code = `${error.code ?? ""} ${error.message ?? ""}`;
+      if (/verif/i.test(code)) {
+        setNeedsVerification(true);
+        setError("Please verify your email first. Check your inbox for the link.");
         return;
       }
-      console.log("[login] success, navigating to /dashboard");
-      sessionStorage.setItem("mca-toast", "welcome-back");
-      router.push("/dashboard");
-      router.refresh();
-    } catch (err) {
-      console.error("[login] signIn.email threw", err);
-      setPending(false);
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      setError(error.message ?? "Sign-in failed");
+      return;
     }
+    sessionStorage.setItem("mca-toast", "welcome-back");
+    router.push("/dashboard");
+    router.refresh();
   }
 
   async function resend() {
@@ -70,13 +59,7 @@ export default function LoginPage() {
   async function social(provider: "google" | "github") {
     // Redirects the browser to the provider; Better Auth brings the user
     // back to /api/auth/callback/<provider>, then to callbackURL.
-    console.log("[login] social start", provider);
-    try {
-      const res = await authClient.signIn.social({ provider, callbackURL: frontendUrl("/dashboard") });
-      console.log("[login] signIn.social result", res);
-    } catch (err) {
-      console.error("[login] signIn.social threw", err);
-    }
+    await authClient.signIn.social({ provider, callbackURL: frontendUrl("/dashboard") });
   }
 
   return (

@@ -7,7 +7,6 @@ import { createAuthClient } from "better-auth/react";
 // Use a relative base so auth requests go through the Next.js /api proxy and
 // cookies stay first-party (works in both dev and production).
 const apiUrl = "";
-console.log("[auth-client] baseURL =", JSON.stringify(apiUrl), "env =", process.env.NEXT_PUBLIC_API_URL);
 export const authClient = createAuthClient({
   baseURL: apiUrl,
 });

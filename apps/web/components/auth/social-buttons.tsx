@@ -9,10 +9,10 @@ export function SocialButtons({
 }) {
   return (
     <div className="space-y-2">
-      <Button variant="outline" className="w-full" onClick={() => { console.log("[login] Google button clicked"); onSocial("google"); }}>
+      <Button variant="outline" className="w-full" onClick={() => onSocial("google")}>
         Continue with Google
       </Button>
-      <Button variant="outline" className="w-full" onClick={() => { console.log("[login] GitHub button clicked"); onSocial("github"); }}>
+      <Button variant="outline" className="w-full" onClick={() => onSocial("github")}>
         Continue with GitHub
       </Button>
     </div>

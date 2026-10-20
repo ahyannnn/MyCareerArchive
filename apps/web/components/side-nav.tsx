@@ -125,6 +125,12 @@ export function SideNav() {
     });
   }
 
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+  if (isAuthRoute) return null;
   if (isPending || !session) return null;
 
   return (
